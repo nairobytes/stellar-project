@@ -1,107 +1,183 @@
-import { useEffect, useState } from 'react'
-import { Wallet, LogOut, Zap, CircleDollarSign, Network, Wifi, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
+import { PREVIEW_MODE } from '../config'
 import { useWallet } from '../hooks/useWallet'
-import { formatUSDC, truncateAddress } from '../utils/format'
-import { NETWORK_LABEL } from '../config'
+import { Wallet, LogOut, Menu, X } from 'lucide-react'
 
-export type TabType = 'supplier' | 'investor' | 'buyer'
-
-const tabs: { id: TabType; label: string }[] = [
-  { id: 'supplier', label: 'Supplier' },
-  { id: 'investor', label: 'Investor' },
-  { id: 'buyer', label: 'Buyer' },
+const dashboardNav = [
+  { label: 'Supplier', path: '/supplier' },
+  { label: 'Investor', path: '/investor' },
+  { label: 'Buyer', path: '/buyer' },
 ]
 
-export function Header({
-  activeTab,
-  onTabChange,
-}: {
-  activeTab: TabType
-  onTabChange: (tab: TabType) => void
-}) {
-  const { account, isConnected, balance, isLoading, connect, disconnect } = useWallet()
-  const [showPulse, setShowPulse] = useState(true)
+const marketingNav = [
+  { label: 'Get started', path: '/get-started' },
+  { label: 'How it works', path: '/#how-it-works' },
+  { label: 'Features', path: '/#features' },
+  { label: 'FAQ', path: '/#faq' },
+]
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setShowPulse((value) => !value), 1200)
-    return () => window.clearInterval(timer)
-  }, [])
+const dashboardPaths = ['/supplier', '/investor', '/buyer']
+
+function navLinkClass(isActive: boolean) {
+  return isActive
+    ? 'font-semibold text-accent'
+    : 'text-subtle hover:text-accent'
+}
+
+export function Header() {
+  const { pathname } = useLocation()
+  const isDashboard = dashboardPaths.includes(pathname)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const { account, isConnected, balance, isLoading, disconnect } = useWallet()
+
+  const closeMenu = () => setMenuOpen(false)
+
+  const walletControl = isConnected && account ? (
+    <button
+      type="button"
+      onClick={() => {
+        disconnect()
+        closeMenu()
+      }}
+      disabled={isLoading}
+      className="btn-ghost flex w-full items-center justify-center gap-2 lg:w-auto lg:!p-2"
+      aria-label="Disconnect wallet"
+    >
+      <LogOut className="h-4 w-4" />
+      <span className="lg:hidden">Disconnect</span>
+    </button>
+  ) : (
+    <button
+      type="button"
+      disabled
+      title={PREVIEW_MODE ? 'Wallet connect disabled in preview mode' : undefined}
+      className="btn-ghost flex w-full cursor-not-allowed items-center justify-center gap-2 opacity-40 lg:w-auto lg:!p-2"
+      aria-label="Connect wallet"
+    >
+      <Wallet className="h-4 w-4" />
+      <span className="text-xs uppercase tracking-[0.15em] lg:hidden">Connect</span>
+    </button>
+  )
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl shadow-[0_8px_32px_rgba(11,31,58,0.06)]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0B1F3A] text-white shadow-lg shadow-[#0B1F3A]/20">
-              <Zap className="h-5 w-5 text-[#3E7BFA]" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold tracking-tight text-[#0B1F3A]">InvoiceFi</div>
-              <div className="text-xs text-slate-500">Stellar invoice financing</div>
-            </div>
-          </div>
+    <header className="sticky top-0 z-50 border-b theme-header backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:gap-4 lg:px-10">
+        <Link
+          to="/"
+          className="shrink-0 font-display text-lg font-bold text-accent sm:text-xl md:text-2xl"
+          onClick={closeMenu}
+        >
+          InvoiceFi
+        </Link>
 
-          <nav className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50/80 p-1 md:flex">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`relative rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'bg-white text-[#0B1F3A] shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
+        {/* Desktop: dashboard role tabs */}
+        {isDashboard && (
+          <nav className="hidden min-w-0 flex-1 justify-center gap-1 lg:flex">
+            {dashboardNav.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `whitespace-nowrap px-3 py-1.5 text-xs uppercase tracking-[0.2em] transition ${navLinkClass(isActive)}`
+                }
               >
-                {tab.label}
-                {activeTab === tab.id ? (
-                  <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-[#3E7BFA]" />
-                ) : null}
-              </button>
+                {item.label}
+              </NavLink>
             ))}
           </nav>
+        )}
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 md:flex">
-              <Network className="h-4 w-4 text-[#3E7BFA]" />
-              <span>{NETWORK_LABEL}</span>
-            </div>
-
-            {isConnected && account ? (
-              <>
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 md:flex">
-                  <CircleDollarSign className="h-4 w-4 text-[#00C48C]" />
-                  <span>${formatUSDC(balance)}</span>
-                </div>
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 lg:flex">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full bg-[#00C48C] ${showPulse ? 'animate-pulse' : ''}`}
-                  />
-                  <Wallet className="h-4 w-4 text-[#0B1F3A]" />
-                  <span>{truncateAddress(account, 4, 4)}</span>
-                </div>
-                <button
-                  onClick={disconnect}
-                  disabled={isLoading}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0B1F3A] px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[#102b52] disabled:opacity-60"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Disconnect
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={connect}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-full bg-[#3E7BFA] px-4 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:translate-y-[-1px] hover:bg-[#3166dc] disabled:opacity-60"
+        {/* Desktop: marketing links */}
+        {!isDashboard && (
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-6 lg:flex">
+            {marketingNav.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`text-xs uppercase tracking-[0.2em] transition ${
+                  pathname === item.path ? 'font-semibold text-accent' : 'text-subtle hover:text-accent'
+                }`}
               >
-                <Wifi className="h-4 w-4" />
-                {isLoading ? 'Connecting...' : 'Connect Wallet'}
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        <div className="flex items-center gap-2">
+          {!isDashboard && (
+            <Link
+              to="/get-started"
+              className="btn-primary hidden !px-4 !py-2 text-xs sm:inline-flex"
+            >
+              Get started
+            </Link>
+          )}
+
+          {isConnected && account && (
+            <span className="hidden text-sm font-semibold text-accent xl:inline">
+              ${balance}
+            </span>
+          )}
+
+          <div className="hidden lg:block">{walletControl}</div>
+
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center border theme-border text-accent lg:hidden"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="border-t theme-border bg-white lg:hidden">
+          <nav className="flex flex-col gap-1 px-4 py-4 sm:px-6">
+            <p className="section-label mb-2 px-1">Navigate</p>
+
+            <Link
+              to="/get-started"
+              onClick={closeMenu}
+              className={`px-3 py-3 text-sm uppercase tracking-[0.2em] ${pathname === '/get-started' ? 'font-semibold text-accent' : 'theme-muted'}`}
+            >
+              Get started
+            </Link>
+
+            {dashboardNav.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `px-3 py-3 text-sm uppercase tracking-[0.2em] transition ${navLinkClass(isActive)}`
+                }
+              >
+                {item.label} dashboard
+              </NavLink>
+            ))}
+
+            {!isDashboard &&
+              marketingNav.slice(1).map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={closeMenu}
+                  className="px-3 py-3 text-sm uppercase tracking-[0.2em] text-subtle hover:text-accent"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+            <div className="mt-4 border-t theme-border pt-4">{walletControl}</div>
+          </nav>
+        </div>
+      )}
     </header>
   )
 }
