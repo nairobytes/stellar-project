@@ -1,4 +1,3 @@
-import { useWallet } from '../hooks/useWallet'
 import { usePendingInvoices } from '../hooks/useInvoices'
 import { FundInvoiceForm } from './FundInvoiceForm'
 import {

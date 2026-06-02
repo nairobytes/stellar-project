@@ -55,7 +55,7 @@ export function FeaturesSection() {
           {features.map(({ icon: Icon, role, path, title, points }) => (
             <Link
               key={role}
-              to={path}
+              to={path ?? "#"}
               className="feature-card flex flex-col border theme-border bg-white p-8 text-left transition hover:border-stellar/40"
             >
               <div className="flex h-12 w-12 items-center justify-center border theme-border bg-stellar/5">

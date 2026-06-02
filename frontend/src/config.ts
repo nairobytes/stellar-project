@@ -1,5 +1,5 @@
 /** Set false when Freighter integration is ready */
-export const PREVIEW_MODE = true
+export const PREVIEW_MODE = false
 
 export const TESTNET_CONFIG = {
   network: 'test',

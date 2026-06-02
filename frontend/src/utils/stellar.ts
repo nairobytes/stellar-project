@@ -1,117 +1,117 @@
 import * as Freighter from '@stellar/freighter-api'
-import { Account } from 'stellar-sdk'
+import { Horizon } from 'stellar-sdk'
 import { TESTNET_CONFIG } from '../config'
+import { withRetry } from './retry'
+import { logger } from './logger'
 
-const mockBalances = new Map<string, string>()
+function horizonServer(): Horizon.Server {
+  return new Horizon.Server(TESTNET_CONFIG.horizonUrl, { allowHttp: false })
+}
 
 function normalizePassphrase(value: string | undefined): string {
   return (value || '').trim().toLowerCase()
 }
 
-// Check if Freighter is installed
 export async function isFreighterInstalled(): Promise<boolean> {
   try {
     const result = await Freighter.isAllowed()
-    return Boolean(result.isAllowed)
+    return Boolean(result.isAllowed !== undefined)
   } catch {
     return false
   }
 }
 
-// Connect wallet using Freighter
 export async function connectWallet(): Promise<string> {
-  try {
-    const allowed = await Freighter.isAllowed()
-    if (!allowed.isAllowed) {
-      const requested = await Freighter.requestAccess()
-      if ('error' in requested && requested.error) {
-        throw new Error(String(requested.error))
-      }
+  const allowed = await Freighter.isAllowed()
+  if (!allowed.isAllowed) {
+    const requested = await Freighter.requestAccess()
+    if ('error' in requested && requested.error) {
+      throw new Error(String(requested.error))
     }
-
-    const networkDetails = await Freighter.getNetworkDetails()
-    if ('error' in networkDetails && networkDetails.error) {
-      throw new Error(String(networkDetails.error))
-    }
-    if (
-      normalizePassphrase(networkDetails.networkPassphrase) !==
-      normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
-    ) {
-      throw new Error('Wrong network selected in Freighter. Please switch to Stellar Testnet.')
-    }
-
-    const addressResult = await Freighter.getAddress()
-    if (!addressResult.address) {
-      throw new Error('Freighter wallet not installed')
-    }
-
-    return addressResult.address
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (message.includes('Freighter wallet not installed')) {
-      throw new Error('Freighter wallet not installed. Install it to connect.')
-    }
-    if (message.toLowerCase().includes('denied') || message.toLowerCase().includes('rejected')) {
-      throw new Error('Wallet connection request was rejected by the user.')
-    }
-    throw new Error(`Failed to connect wallet: ${message}`)
   }
+
+  const networkDetails = await Freighter.getNetworkDetails()
+  if ('error' in networkDetails && networkDetails.error) {
+    throw new Error(String(networkDetails.error))
+  }
+
+  if (
+    normalizePassphrase(networkDetails.networkPassphrase) !==
+    normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
+  ) {
+    throw new Error(
+      'Wrong network in Freighter. Please switch to Stellar Testnet.'
+    )
+  }
+
+  const addressResult = await Freighter.getAddress()
+  if (!addressResult.address) {
+    throw new Error('Could not get address from Freighter.')
+  }
+
+  logger.info('Wallet connected', { address: addressResult.address })
+  return addressResult.address
 }
 
-// Get wallet balance (USDC)
 export async function getUSDCBalance(publicKey: string): Promise<string> {
   try {
-    const cached = mockBalances.get(publicKey)
-    if (cached) return cached
-    const fallback = '1000.00'
-    mockBalances.set(publicKey, fallback)
-    return fallback
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to get balance: ${message}`)
+    const server = horizonServer()
+    const account = await withRetry(() => server.loadAccount(publicKey))
+
+    const usdcBalance = account.balances.find(
+      (b) =>
+        (b.asset_type === 'credit_alphanum4' || b.asset_type === 'credit_alphanum12') &&
+        'asset_code' in b &&
+        'asset_issuer' in b &&
+        b.asset_code === 'USDC'
+    )
+
+    if (!usdcBalance) {
+      logger.info('No USDC balance found — account may not have trustline', { publicKey })
+      return '0.00'
+    }
+
+    const raw = parseFloat(usdcBalance.balance)
+    return raw.toFixed(2)
+  } catch (err) {
+    logger.error('getUSDCBalance failed', { error: String(err) })
+    return '0.00'
   }
 }
 
-// Sign transaction with Freighter
 export async function signTransaction(
   transactionXDR: string,
   networkPassphrase: string = TESTNET_CONFIG.networkPassphrase
 ): Promise<string> {
-  try {
-    const result = await Freighter.signTransaction(transactionXDR, {
-      networkPassphrase,
-    })
-    if ('error' in result && result.error) {
-      throw new Error(String(result.error))
-    }
+  const result = await Freighter.signTransaction(transactionXDR, {
+    networkPassphrase,
+  })
 
-    return result.signedTxXdr
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to sign transaction: ${message}`)
+  if ('error' in result && result.error) {
+    throw new Error(`Freighter rejected transaction: ${String(result.error)}`)
+  }
+
+  return result.signedTxXdr
+}
+
+export async function getXLMBalance(publicKey: string): Promise<string> {
+  try {
+    const server = horizonServer()
+    const account = await withRetry(() => server.loadAccount(publicKey))
+    const native = account.balances.find((b) => b.asset_type === 'native')
+    if (!native) return '0.00'
+    return parseFloat(native.balance).toFixed(2)
+  } catch {
+    return '0.00'
   }
 }
 
-// Sign and send transaction
-export async function signAndSendTransaction(
-  transactionXDR: string,
-  networkPassphrase: string = TESTNET_CONFIG.networkPassphrase
-): Promise<string> {
+export async function accountExists(publicKey: string): Promise<boolean> {
   try {
-    const signedXDR = await signTransaction(transactionXDR, networkPassphrase)
-    return signedXDR
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to sign and send transaction: ${message}`)
-  }
-}
-
-// Get account details from network
-export async function getAccountDetails(publicKey: string): Promise<Account> {
-  try {
-    // Mock implementation - in production, fetch from Horizon
-    return new Account(publicKey, '0')
-  } catch (error) {
-    throw new Error(`Failed to get account details: ${error}`)
+    const server = horizonServer()
+    await server.loadAccount(publicKey)
+    return true
+  } catch {
+    return false
   }
 }

@@ -1,83 +1,142 @@
-import { BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS } from '../config';
-import { Invoice, InvoiceStatus } from '../types';
+import {
+  Contract,
+  SorobanRpc,
+  TransactionBuilder,
+  xdr,
+  nativeToScVal,
+  scValToNative,
+  Address,
+} from 'stellar-sdk'
+import { signTransaction } from './stellar'
+import { CONTRACT_ADDRESS, TESTNET_CONFIG, USDC_ADDRESS, BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS } from '../config'
+import { Invoice, InvoiceStatus } from '../types'
+import { withRetry } from './retry'
+import { logger } from './logger'
 
-interface PersistedInvoice {
-  id: number;
-  supplier: string;
-  buyer: string;
-  amount: string;
-  discount_bps: number;
-  funded_amount: string;
-  status: InvoiceStatus;
-  maturity_time: string;
-  investor: string | null;
-  creation_time: string;
-  repaid_amount: string;
+const RPC_URL = TESTNET_CONFIG.rpcUrl
+const NETWORK_PASSPHRASE = TESTNET_CONFIG.networkPassphrase
+const BASE_FEE = '100000'
+const TX_TIMEOUT = 30
+
+function rpc(): SorobanRpc.Server {
+  return new SorobanRpc.Server(RPC_URL, { allowHttp: false })
 }
 
-interface ChainState {
-  nextId: number;
-  invoices: PersistedInvoice[];
-  creditScores: Record<string, number>;
+function contract(): Contract {
+  return new Contract(CONTRACT_ADDRESS)
 }
 
-let chainState: ChainState = emptyState();
+async function simulateAndSend(
+  callerPublicKey: string,
+  operation: xdr.Operation
+): Promise<SorobanRpc.Api.GetTransactionResponse> {
+  const server = rpc()
 
-function now(): bigint {
-  return BigInt(Math.floor(Date.now() / 1000));
+  const account = await withRetry(() => server.getAccount(callerPublicKey))
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(operation)
+    .setTimeout(TX_TIMEOUT)
+    .build()
+
+  const simResult = await withRetry(() => server.simulateTransaction(tx))
+
+  if (SorobanRpc.Api.isSimulationError(simResult)) {
+    logger.error('Simulation failed', { error: simResult.error })
+    throw new Error(`Contract simulation failed: ${simResult.error}`)
+  }
+
+  const preparedTx = SorobanRpc.assembleTransaction(tx, simResult).build()
+  const signedXdr = await signTransaction(preparedTx.toXDR(), NETWORK_PASSPHRASE)
+
+  const submittedTx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE)
+  const sendResult = await withRetry(() => server.sendTransaction(submittedTx))
+
+  if (sendResult.status === 'ERROR') {
+    logger.error('Send failed', { result: sendResult })
+    throw new Error(`Transaction send failed: ${JSON.stringify(sendResult.errorResult)}`)
+  }
+
+  let getResult = await withRetry(() => server.getTransaction(sendResult.hash))
+  let attempts = 0
+
+  while (
+    getResult.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND &&
+    attempts < 20
+  ) {
+    await new Promise((r) => setTimeout(r, 1500))
+    getResult = await withRetry(() => server.getTransaction(sendResult.hash))
+    attempts++
+  }
+
+  if (getResult.status !== SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+    throw new Error(`Transaction failed with status: ${getResult.status}`)
+  }
+
+  return getResult
 }
 
-function emptyState(): ChainState {
+async function readContract(method: string, args: xdr.ScVal[]): Promise<xdr.ScVal> {
+  const server = rpc()
+  const c = contract()
+
+  const operation = c.call(method, ...args)
+
+  const dummyKeypair = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN'
+  const account = await withRetry(() => server.getAccount(dummyKeypair).catch(() =>
+    server.getAccount('GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5')
+  ))
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(operation)
+    .setTimeout(TX_TIMEOUT)
+    .build()
+
+  const simResult = await withRetry(() => server.simulateTransaction(tx))
+
+  if (SorobanRpc.Api.isSimulationError(simResult)) {
+    throw new Error(`Read simulation failed: ${simResult.error}`)
+  }
+
+  if (!simResult.result?.retval) {
+    throw new Error('No return value from contract read')
+  }
+
+  return simResult.result.retval
+}
+
+function parseInvoiceStatus(val: unknown): InvoiceStatus {
+  const s = String(val)
+  const map: Record<string, InvoiceStatus> = {
+    Pending: 'Pending',
+    Funded: 'Funded',
+    Repaid: 'Repaid',
+    Overdue: 'Overdue',
+    Defaulted: 'Defaulted',
+  }
+  return map[s] ?? 'Pending'
+}
+
+function scValToInvoice(val: xdr.ScVal): Invoice {
+  const native = scValToNative(val) as Record<string, unknown>
   return {
-    nextId: 1,
-    invoices: [],
-    creditScores: {},
-  };
-}
-
-function loadState(): ChainState {
-  return chainState;
-}
-
-function saveState(state: ChainState): void {
-  chainState = state;
-}
-
-function toInvoice(input: PersistedInvoice): Invoice {
-  return {
-    id: BigInt(input.id),
-    supplier: input.supplier,
-    buyer: input.buyer,
-    amount: BigInt(input.amount),
-    discount_bps: input.discount_bps,
-    funded_amount: BigInt(input.funded_amount),
-    status: input.status,
-    maturity_time: BigInt(input.maturity_time),
-    investor: input.investor,
-    creation_time: BigInt(input.creation_time),
-    repaid_amount: BigInt(input.repaid_amount),
-  };
-}
-
-function fromInvoice(input: Invoice): PersistedInvoice {
-  return {
-    id: Number(input.id),
-    supplier: input.supplier,
-    buyer: input.buyer,
-    amount: input.amount.toString(),
-    discount_bps: input.discount_bps,
-    funded_amount: input.funded_amount.toString(),
-    status: input.status,
-    maturity_time: input.maturity_time.toString(),
-    investor: input.investor,
-    creation_time: input.creation_time.toString(),
-    repaid_amount: input.repaid_amount.toString(),
-  };
-}
-
-function requireAddress(value: string, label: string): void {
-  if (!/^(C|G)[A-Z0-9]{55}$/.test(value)) {
-    throw new Error(`${label} is not a valid Stellar address`);
+    id: BigInt(String(native.id ?? 0)),
+    supplier: String(native.supplier ?? ''),
+    buyer: String(native.buyer ?? ''),
+    amount: BigInt(String(native.amount ?? 0)),
+    discount_bps: Number(native.discount_bps ?? 0),
+    funded_amount: BigInt(String(native.funded_amount ?? 0)),
+    status: parseInvoiceStatus(native.status),
+    maturity_time: BigInt(String(native.maturity_time ?? 0)),
+    investor: native.investor ? String(native.investor) : null,
+    creation_time: BigInt(String(native.created_at ?? native.creation_time ?? 0)),
+    repaid_amount: BigInt(String(native.repaid_at ?? native.repaid_amount ?? 0)),
   }
 }
 
@@ -88,178 +147,201 @@ export async function createInvoice(
   discount_bps: number,
   maturity_time: bigint
 ): Promise<bigint> {
-  requireAddress(supplier, 'Supplier address');
-  requireAddress(buyer, 'Buyer address');
+  logger.info('createInvoice', { supplier, buyer, amount: amount.toString(), discount_bps })
 
-  if (amount <= 0n) throw new Error('Invoice amount must be greater than zero');
-  if (discount_bps < 0 || discount_bps > BASIS_POINTS_DIVISOR) {
-    throw new Error('Discount rate must be between 0 and 100%');
-  }
-  if (maturity_time <= now()) {
-    throw new Error('Due date must be in the future');
-  }
+  const c = contract()
+  const operation = c.call(
+    'create_invoice',
+    Address.fromString(supplier).toScVal(),
+    Address.fromString(buyer).toScVal(),
+    nativeToScVal(amount, { type: 'i128' }),
+    nativeToScVal(discount_bps, { type: 'u32' }),
+    nativeToScVal(maturity_time, { type: 'u64' })
+  )
 
-  const state = loadState();
-  const id = state.nextId;
-  state.nextId += 1;
-
-  const invoice: Invoice = {
-    id: BigInt(id),
-    supplier,
-    buyer,
-    amount,
-    discount_bps,
-    funded_amount: 0n,
-    status: 'Pending',
-    maturity_time,
-    investor: null,
-    creation_time: now(),
-    repaid_amount: 0n,
-  };
-
-  state.invoices.push(fromInvoice(invoice));
-  saveState(state);
-
-  return BigInt(id);
+  const result = await simulateAndSend(supplier, operation)
+  const retval = (result as SorobanRpc.Api.GetSuccessfulTransactionResponse).returnValue
+  if (!retval) throw new Error('No return value from create_invoice')
+  const id = scValToNative(retval)
+  return BigInt(String(id))
 }
 
 export async function fundInvoice(
   invoice_id: bigint,
   investor: string,
-  _usdc_contract: string,
+  usdc_contract: string,
   amount: bigint
 ): Promise<boolean> {
-  requireAddress(investor, 'Investor address');
-  if (amount <= 0n) throw new Error('Funding amount must be positive');
+  logger.info('fundInvoice', { invoice_id: invoice_id.toString(), investor })
 
-  const state = loadState();
-  const idx = state.invoices.findIndex((inv) => inv.id === Number(invoice_id));
-  if (idx < 0) throw new Error('Invoice not found');
+  const c = contract()
+  const operation = c.call(
+    'fund_invoice',
+    nativeToScVal(invoice_id, { type: 'u64' }),
+    Address.fromString(investor).toScVal(),
+    Address.fromString(usdc_contract).toScVal(),
+    nativeToScVal(amount, { type: 'i128' })
+  )
 
-  const invoice = toInvoice(state.invoices[idx]);
-  if (invoice.status !== 'Pending') {
-    throw new Error('Invoice must be pending before funding');
-  }
-
-  invoice.funded_amount = invoice.funded_amount + amount;
-  if (invoice.funded_amount >= invoice.amount) {
-    invoice.status = 'Funded';
-    invoice.investor = investor;
-  }
-
-  state.invoices[idx] = fromInvoice(invoice);
-  saveState(state);
-  return true;
+  await simulateAndSend(investor, operation)
+  return true
 }
 
 export async function repayInvoice(
   invoice_id: bigint,
   buyer: string,
-  _usdc_contract: string,
+  usdc_contract: string,
   repayment_amount: bigint
 ): Promise<boolean> {
-  requireAddress(buyer, 'Buyer address');
-  if (repayment_amount <= 0n) throw new Error('Repayment amount must be positive');
+  logger.info('repayInvoice', { invoice_id: invoice_id.toString(), buyer })
 
-  const state = loadState();
-  const idx = state.invoices.findIndex((inv) => inv.id === Number(invoice_id));
-  if (idx < 0) throw new Error('Invoice not found');
+  const c = contract()
+  const operation = c.call(
+    'repay_invoice',
+    nativeToScVal(invoice_id, { type: 'u64' }),
+    Address.fromString(buyer).toScVal(),
+    Address.fromString(usdc_contract).toScVal(),
+    nativeToScVal(repayment_amount, { type: 'i128' })
+  )
 
-  const invoice = toInvoice(state.invoices[idx]);
-  if (invoice.buyer !== buyer) {
-    throw new Error('Only the invoice buyer can repay this invoice');
-  }
-
-  if (invoice.status !== 'Funded' && invoice.status !== 'Overdue') {
-    throw new Error('Invoice must be funded or overdue before repayment');
-  }
-
-  const yieldAmount =
-    (invoice.amount * BigInt(INVESTOR_YIELD_BPS)) / BigInt(BASIS_POINTS_DIVISOR);
-  const totalDue = invoice.amount + yieldAmount;
-
-  if (repayment_amount < totalDue) {
-    throw new Error('Repayment amount is less than amount due');
-  }
-
-  invoice.repaid_amount = repayment_amount;
-  invoice.status = 'Repaid';
-
-  const currentScore = state.creditScores[invoice.supplier] ?? 500;
-  state.creditScores[invoice.supplier] = Math.min(currentScore + 20, 1000);
-
-  state.invoices[idx] = fromInvoice(invoice);
-  saveState(state);
-  return true;
+  await simulateAndSend(buyer, operation)
+  return true
 }
 
 export async function getInvoice(invoice_id: bigint): Promise<Invoice> {
-  const state = loadState();
-  const invoice = state.invoices.find((inv) => inv.id === Number(invoice_id));
-  if (!invoice) throw new Error('Invoice not found');
-  return toInvoice(invoice);
+  logger.info('getInvoice', { invoice_id: invoice_id.toString() })
+
+  const retval = await readContract('get_invoice', [
+    nativeToScVal(invoice_id, { type: 'u64' }),
+  ])
+
+  return scValToInvoice(retval)
 }
 
 export async function getSupplierInvoices(supplier: string): Promise<bigint[]> {
-  const state = loadState();
-  return state.invoices
-    .filter((inv) => inv.supplier === supplier)
-    .map((inv) => BigInt(inv.id));
+  logger.info('getSupplierInvoices', { supplier })
+
+  const retval = await readContract('get_supplier_invoices', [
+    Address.fromString(supplier).toScVal(),
+  ])
+
+  const native = scValToNative(retval) as unknown[]
+  return native.map((id) => BigInt(String(id)))
 }
 
 export async function getCreditScore(supplier: string): Promise<number> {
-  const state = loadState();
-  return state.creditScores[supplier] ?? 500;
+  logger.info('getCreditScore', { supplier })
+
+  const retval = await readContract('get_credit_score', [
+    Address.fromString(supplier).toScVal(),
+  ])
+
+  return Number(scValToNative(retval))
 }
 
 export async function markOverdue(invoice_id: bigint): Promise<boolean> {
-  const state = loadState();
-  const idx = state.invoices.findIndex((inv) => inv.id === Number(invoice_id));
-  if (idx < 0) throw new Error('Invoice not found');
+  logger.info('markOverdue', { invoice_id: invoice_id.toString() })
 
-  const invoice = toInvoice(state.invoices[idx]);
-  if (now() <= invoice.maturity_time) {
-    throw new Error('Invoice has not reached maturity time');
-  }
+  const server = rpc()
+  const c = contract()
 
-  if (invoice.status !== 'Funded') {
-    return false;
-  }
+  const account = await withRetry(() =>
+    server.getAccount('GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5')
+  )
 
-  invoice.status = 'Overdue';
-  state.invoices[idx] = fromInvoice(invoice);
-  saveState(state);
-  return true;
+  const operation = c.call(
+    'mark_overdue',
+    nativeToScVal(invoice_id, { type: 'u64' })
+  )
+
+  const tx = new TransactionBuilder(account, {
+    fee: BASE_FEE,
+    networkPassphrase: NETWORK_PASSPHRASE,
+  })
+    .addOperation(operation)
+    .setTimeout(TX_TIMEOUT)
+    .build()
+
+  const simResult = await withRetry(() => server.simulateTransaction(tx))
+  if (SorobanRpc.Api.isSimulationError(simResult)) return false
+
+  const retval = simResult.result?.retval
+  if (!retval) return false
+  return Boolean(scValToNative(retval))
 }
 
 export async function markDefaulted(invoice_id: bigint): Promise<boolean> {
-  const state = loadState();
-  const idx = state.invoices.findIndex((inv) => inv.id === Number(invoice_id));
-  if (idx < 0) throw new Error('Invoice not found');
+  logger.info('markDefaulted', { invoice_id: invoice_id.toString() })
 
-  const invoice = toInvoice(state.invoices[idx]);
-  if (invoice.status !== 'Overdue') {
-    throw new Error('Only overdue invoices can be marked defaulted');
-  }
+  const retval = await readContract('mark_defaulted', [
+    nativeToScVal(invoice_id, { type: 'u64' }),
+  ])
 
-  invoice.status = 'Defaulted';
-  const currentScore = state.creditScores[invoice.supplier] ?? 500;
-  state.creditScores[invoice.supplier] = Math.max(currentScore - 40, 0);
-  state.invoices[idx] = fromInvoice(invoice);
-  saveState(state);
-  return true;
+  return Boolean(scValToNative(retval))
 }
 
 export async function updateCreditScore(supplier: string, newScore: number): Promise<void> {
-  if (newScore < 0 || newScore > 1000) {
-    throw new Error('Credit score must be between 0 and 1000');
-  }
-  const state = loadState();
-  state.creditScores[supplier] = newScore;
-  saveState(state);
+  logger.info('updateCreditScore', { supplier, newScore })
+
+  const c = contract()
+  const operation = c.call(
+    'update_credit_score',
+    Address.fromString(supplier).toScVal(),
+    nativeToScVal(newScore, { type: 'u32' })
+  )
+
+  await simulateAndSend(supplier, operation)
 }
 
 export async function getAllInvoices(): Promise<Invoice[]> {
-  const state = loadState();
-  return state.invoices.map(toInvoice);
+  logger.info('getAllInvoices — scanning on-chain')
+
+  const server = rpc()
+
+  try {
+    const events = await withRetry(() =>
+      server.getEvents({
+        startLedger: 1,
+        filters: [
+          {
+            type: 'contract',
+            contractIds: [CONTRACT_ADDRESS],
+            topics: [['*']],
+          },
+        ],
+        limit: 200,
+      })
+    )
+
+    const invoiceIds = new Set<bigint>()
+    for (const event of events.events) {
+      try {
+        const topics = event.topic
+        if (topics.length >= 2) {
+          const idVal = scValToNative(topics[1])
+          invoiceIds.add(BigInt(String(idVal)))
+        }
+      } catch {
+        // skip unparseable events
+      }
+    }
+
+    if (invoiceIds.size === 0) return []
+
+    const invoices = await Promise.all(
+      Array.from(invoiceIds).map((id) =>
+        getInvoice(id).catch((err) => {
+          logger.warn('Failed to fetch invoice', { id: id.toString(), error: String(err) })
+          return null
+        })
+      )
+    )
+
+    return invoices.filter((inv): inv is Invoice => inv !== null)
+  } catch (err) {
+    logger.error('getAllInvoices failed', { error: String(err) })
+    return []
+  }
 }
+
+export { BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS, USDC_ADDRESS }
