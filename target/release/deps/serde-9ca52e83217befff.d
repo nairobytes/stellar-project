@@ -1,0 +1,14 @@
+C:\Users\kings\Documents\GitHub\stellar-project\target\release\deps\serde-9ca52e83217befff.d: C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\kings\Documents\GitHub\stellar-project\target\release\build\serde-c0cad6ee7ae43779\out/private.rs
+
+C:\Users\kings\Documents\GitHub\stellar-project\target\release\deps\libserde-9ca52e83217befff.rlib: C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\kings\Documents\GitHub\stellar-project\target\release\build\serde-c0cad6ee7ae43779\out/private.rs
+
+C:\Users\kings\Documents\GitHub\stellar-project\target\release\deps\libserde-9ca52e83217befff.rmeta: C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\kings\Documents\GitHub\stellar-project\target\release\build\serde-c0cad6ee7ae43779\out/private.rs
+
+C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\kings\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\kings\Documents\GitHub\stellar-project\target\release\build\serde-c0cad6ee7ae43779\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\kings\\Documents\\GitHub\\stellar-project\\target\\release\\build\\serde-c0cad6ee7ae43779\\out

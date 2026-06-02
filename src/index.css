@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-50;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors;
+  }
+
+  .btn-success {
+    @apply px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
+  }
+
+  .card {
+    @apply bg-slate-900 border border-slate-800 rounded-lg p-6 shadow-lg;
+  }
+
+  .badge-pending {
+    @apply inline-block px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-medium rounded-full;
+  }
+
+  .badge-funded {
+    @apply inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-full;
+  }
+
+  .badge-repaid {
+    @apply inline-block px-3 py-1 bg-green-500/20 text-green-400 text-sm font-medium rounded-full;
+  }
+
+  .badge-overdue {
+    @apply inline-block px-3 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full;
+  }
+
+  .badge-defaulted {
+    @apply inline-block px-3 py-1 bg-red-600/20 text-red-300 text-sm font-medium rounded-full;
+  }
+}
