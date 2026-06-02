@@ -1,233 +1,296 @@
 # InvoiceFi
 
-InvoiceFi is a Stellar Soroban invoice-financing platform for SMEs.
+> On-chain invoice financing for SMEs — built on Stellar using Soroban smart contracts in Rust.
 
-The app supports three roles:
-- Supplier: creates invoices and gets early liquidity.
-- Investor: funds invoices and earns yield.
-- Buyer: repays funded invoices at maturity.
+InvoiceFi eliminates the middleman from invoice financing. Suppliers get early USDC liquidity today. Investors fund invoices at a discount and earn yield at maturity. Corporate buyers repay on-chain. All escrow logic, fund distribution, and credit scoring is enforced entirely by a Soroban smart contract — no banks, no delays, no fraud.
+
+---
+
+## Live Deployment
+
+| | |
+|---|---|
+| **Network** | Stellar Testnet |
+| **Contract ID** | `CDR4RQN6TVPHHEKD46MKH6LH677XLWHLN63LYICDHLR5PKHDP74KFRF6` |
+| **USDC Token (SAC)** | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
+| **USDC Issuer** | `GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5` |
+| **Explorer** | [View on Stellar Expert ↗](https://stellar.expert/explorer/testnet/contract/CDR4RQN6TVPHHEKD46MKH6LH677XLWHLN63LYICDHLR5PKHDP74KFRF6) |
+
+---
+
+## How It Works
+
+```
+Supplier creates invoice
+        ↓
+Investor funds it → USDC locked in contract escrow
+        ↓
+Buyer repays at maturity
+        ↓
+Contract automatically splits:
+  → Principal + yield  →  Investor
+  → Any surplus        →  Supplier
+  → Credit score       →  Updated on-chain
+```
+
+Every step is a Soroban function. No human touches the funds.
+
+---
+
+## Invoice Lifecycle
+
+```
+Pending → Funded → Repaid
+            ↓
+          Overdue → Defaulted
+```
+
+| Status | Meaning |
+|--------|---------|
+| `Pending` | Created, waiting for an investor |
+| `Funded` | Investor locked USDC in escrow |
+| `Repaid` | Buyer paid — funds distributed automatically |
+| `Overdue` | Maturity passed, not yet repaid |
+| `Defaulted` | Marked after grace period — credit score penalised |
+
+---
 
 ## Tech Stack
 
-- Smart contract: Rust + Soroban SDK
-- Frontend: React + TypeScript + Vite + Tailwind
-- Wallet integration: Freighter API
-- Network defaults: Stellar testnet + USDC-compatible token contract
+| Layer | Technology |
+|-------|-----------|
+| Smart contract | Rust + Soroban SDK v21 |
+| Blockchain | Stellar Network |
+| Token standard | Stellar Asset Contract (SAC) — USDC |
+| Frontend | React + TypeScript + Vite + Tailwind CSS |
+| Wallet | Freighter API |
+| Dev tooling | Stellar CLI + cargo |
 
-## Frontend Routes
-
-| Path | Page |
-|------|------|
-| `/` | Landing (hero, features, FAQ) |
-| `/get-started` | Role picker (supplier / investor / buyer) |
-| `/supplier` | Supplier dashboard |
-| `/investor` | Investor marketplace |
-| `/buyer` | Buyer payment portal |
-
-## Preview Mode
-
-`src/config.ts` sets `PREVIEW_MODE = true` by default so you can browse all dashboards with sample data and without connecting Freighter. Set it to `false` when wallet + on-chain calls are ready.
+---
 
 ## Repository Structure
 
-```text
-.
-├── src/
-│   ├── pages/             # Route-level pages (Home, GetStarted, dashboards)
-│   ├── components/        # UI (Header, Hero, dashboards, forms)
-│   ├── hooks/             # useWallet.tsx, useInvoices.ts
-│   ├── utils/             # Soroban + Stellar utilities
-│   ├── types/             # Shared TS types
-│   ├── lib.rs             # Soroban contract
-│   ├── config.ts          # Env config + PREVIEW_MODE
-│   └── App.tsx            # React Router routes
-├── Cargo.toml             # Soroban contract crate config
-├── package.json           # Frontend scripts + deps
-├── .env.example           # Frontend environment template
-└── vite.config.ts         # Dev server config (port 3000)
+```
+stellar-project/
+│
+├── contract/                        # Soroban smart contract — live on Stellar Testnet
+│   ├── src/
+│   │   ├── lib.rs                   # Contract logic: functions, structs, storage, events
+│   │   └── tests.rs                 # 18 unit tests covering full lifecycle
+│   ├── test_snapshots/              # Soroban test snapshot files
+│   ├── Cargo.toml                   # Package manifest and dependencies
+│   ├── Makefile                     # Build shortcuts
+│   └── README.md                    # Full contract API docs and CLI reference
+│
+├── frontend/                        # React + TypeScript frontend
+│   ├── src/
+│   │   ├── components/              # UI: dashboards, forms, layout, header, footer
+│   │   ├── pages/                   # Routes: Home, GetStarted, Supplier, Investor, Buyer
+│   │   ├── hooks/                   # useWallet.tsx, useInvoices.ts
+│   │   ├── utils/                   # Soroban RPC, Stellar/Freighter, formatting helpers
+│   │   ├── types/                   # Shared TypeScript types
+│   │   ├── config.ts                # Contract addresses, network config, PREVIEW_MODE
+│   │   └── App.tsx                  # React Router definitions
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   └── .env.example
+│
+├── docs/
+│   ├── FRONTEND_README.md           # Component map, routes, preview mode guide
+│   ├── LOCALHOST.md                 # Localhost setup and troubleshooting
+│   └── HARDENING_NOTES.md          # Security hardening decisions
+│
+├── .gitignore
+└── README.md
 ```
 
-## Quick Start (Localhost)
+---
 
-### 1) Install dependencies
+## Smart Contract
 
-```bash
-npm install
-```
+The contract is the core of InvoiceFi. It is written in Rust using `soroban-sdk` v21, deployed to Stellar Testnet, and handles all business logic on-chain.
 
-### 2) Configure environment
+### Contract Functions
 
-```bash
-cp .env.example .env
-```
+| Function | Caller | Description |
+|----------|--------|-------------|
+| `init(usdc_contract)` | Admin | Initialise contract with USDC address — called once |
+| `create_invoice(supplier, buyer, amount, discount_bps, maturity_time)` | Supplier | List an invoice for financing |
+| `fund_invoice(invoice_id, investor, usdc_contract, amount)` | Investor | Lock USDC in escrow |
+| `repay_invoice(invoice_id, buyer, usdc_contract, amount)` | Buyer | Repay — contract distributes funds |
+| `mark_overdue(invoice_id)` | Anyone | Call after maturity timestamp passes |
+| `mark_defaulted(invoice_id)` | Anyone | Mark overdue invoice as defaulted |
+| `get_invoice(invoice_id)` | Read | Returns full invoice struct |
+| `get_supplier_invoices(supplier)` | Read | Returns all invoice IDs for a supplier |
+| `get_credit_score(supplier)` | Read | Returns supplier credit score (0–1000) |
+| `get_configured_usdc_contract()` | Read | Returns configured USDC contract address |
 
-Then edit `.env` and set at minimum:
-- `VITE_CONTRACT_ADDRESS`
-- `VITE_USDC_ADDRESS`
+### Credit Scoring
 
-If you do not have deployed addresses yet, the app still starts with placeholders from `src/config.ts`.
+Every supplier starts at **500**. Score is updated automatically on-chain:
 
-### 3) Start the frontend on localhost
+| Event | Change |
+|-------|--------|
+| Successful repayment | +20 (cap 1000) |
+| Invoice defaulted | −40 (floor 0) |
 
-```bash
-npm run dev -- --host 0.0.0.0
-```
+### Events
 
-Open:
-- `http://localhost:3000`
+Every state change emits a Soroban event — the frontend listens via Horizon streaming for real-time updates.
 
-If `3000` is already in use, Vite will auto-select `3001`.
+| Event | Trigger |
+|-------|---------|
+| `InvoiceCr` | `create_invoice` |
+| `InvoiceFn` | `fund_invoice` |
+| `InvoiceRp` | `repay_invoice` |
+| `InvoiceDf` | `mark_defaulted` |
 
-### 4) Build check
+---
 
-```bash
-npm run build
-```
-
-## Frontend Scripts
-
-```bash
-npm run dev         # Start Vite dev server
-npm run build       # TypeScript check + production build
-npm run preview     # Preview production build
-npm run type-check  # Run tsc with no emit
-npm run lint        # Run ESLint
-```
-
-## Smart Contract (Rust/Soroban)
+## Contract — Quick Start
 
 ### Prerequisites
 
 ```bash
 rustup target add wasm32-unknown-unknown
+cargo install --locked stellar-cli --features opt
 ```
 
-Build contract WASM:
+### Build
 
 ```bash
-cargo build --target wasm32-unknown-unknown --release
+cd contract
+stellar contract build
 ```
 
-Run tests:
+Output: `contract/target/wasm32v1-none/release/invoicefi.wasm`
+
+### Test
 
 ```bash
+cd contract
 cargo test -- --nocapture
 ```
 
-## Full Setup (Contract + Frontend)
+18 tests. All must pass. Covers: create, fund, repay, overdue, default, wrong buyer rejection, credit scoring, and full lifecycle.
 
-Use this sequence for a clean, end-to-end local setup.
-
-1. Install dependencies
+### Deploy to testnet
 
 ```bash
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/invoicefi.wasm \
+  --source admin \
+  --network testnet
+```
+
+### Initialise
+
+```bash
+stellar contract invoke \
+  --id $CONTRACT_ID \
+  --source admin \
+  --network testnet \
+  -- init \
+  --usdc_contract $USDC_TOKEN
+```
+
+For full CLI invocation examples for every function, see [`contract/README.md`](./contract/README.md).
+
+---
+
+## Frontend — Quick Start
+
+The frontend runs in **Preview Mode** by default. All three dashboards work with sample data — no wallet or contract connection needed.
+
+### Setup
+
+```bash
+cd frontend
 npm install
-```
-
-2. Prepare frontend environment
-
-```bash
 cp .env.example .env
+npm run dev
 ```
 
-3. Run contract tests
+Open `http://localhost:3000`
+
+### Connect to live contract
+
+Set `PREVIEW_MODE = false` in `frontend/src/config.ts`, then fill in `.env`:
+
+```env
+VITE_CONTRACT_ADDRESS=CDR4RQN6TVPHHEKD46MKH6LH677XLWHLN63LYICDHLR5PKHDP74KFRF6
+VITE_USDC_ADDRESS=CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA
+VITE_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+VITE_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+```
+
+### Routes
+
+| Path | Page |
+|------|------|
+| `/` | Landing page — hero, features, FAQ |
+| `/get-started` | Role picker — supplier, investor, or buyer |
+| `/supplier` | Create invoices, track pipeline, view credit score |
+| `/investor` | Browse pending invoices, fund, track yield |
+| `/buyer` | View obligations, repay invoices |
+
+### Scripts
 
 ```bash
-cargo test -- --nocapture
+npm run dev          # Dev server on port 3000
+npm run build        # TypeScript check + production build
+npm run lint         # ESLint
+npm run type-check   # TypeScript only, no emit
+npm run preview      # Preview production build
 ```
 
-4. Run frontend quality gates
+---
 
-```bash
-npm run lint
-npm run build
-```
+## Test Accounts (Testnet)
 
-5. Start localhost app
+| Role | Public Key |
+|------|-----------|
+| Admin | `GCGPX3QLQ5RTQDPP4UEYFGZ2IG5E3WZ5TL3BHYJMQS7M652ZXF7GILJ4` |
+| Supplier | `GCQJPTW7IKNDOFDL3G4AV232Y2UVZVKZH52EIM7EHKA3FWJXCE4P5RY7` |
+| Investor | `GBEQWIDBKTSPG2C7OACPTNLGMWFOKQM5CO2MJ22GOKHKHTNP42N6ZJOW` |
+| Buyer | `GAXVRKUKYLOUGCTGMKRDDXWAFIYXJJKRH7W7DDE6VP42X4JDLFZZNZF2` |
 
-```bash
-npm run dev -- --host 0.0.0.0
-```
-
-## Contract Initialization Requirement
-
-The contract now enforces a configured USDC contract address at initialization.
-
-- `init(env, usdc_contract)` must be called once.
-- `fund_invoice` and `repay_invoice` now validate the provided token contract against the configured USDC contract.
-
-Security benefit:
-- Prevents caller-controlled token contract substitution in financing and repayment paths.
-
-## Current Frontend State Model
-
-The frontend invoice facade no longer persists invoice state in browser localStorage.
-
-- Session state is in-memory only.
-- This reduces persistent tampering and local data leakage risks.
-- For production, replace the local facade with direct on-chain reads/writes and signed transactions.
+---
 
 ## Verification Checklist
 
-Run these before demos or releases:
+Run all three before any demo or release:
 
 ```bash
-cargo test -- --nocapture
-npm run lint
-npm run build
+cd contract && cargo test -- --nocapture   # 18 tests must pass
+cd frontend && npm run lint                # 0 warnings
+cd frontend && npm run build               # must succeed
 ```
 
-Expected:
-- Contract tests pass.
-- Lint passes.
-- Build passes.
+---
 
-If `cargo` is not found in a new shell, run:
+## Security Notes
 
-```bash
-source "$HOME/.cargo/env"
-```
+- All USDC token transfers use the Stellar Asset Contract (SAC) interface via `token::Client` — the contract never holds private keys
+- `init()` pins the USDC contract address at deployment — `fund_invoice` and `repay_invoice` reject any token contract that does not match, preventing caller-controlled token substitution
+- All auth enforced using `require_auth()` — suppliers, investors, and buyers must sign their own transactions
+- Frontend session state is in-memory only — no invoice state persisted in `localStorage`
 
-## Environment Variables
-
-Reference `.env.example`:
-
-- `VITE_CONTRACT_ADDRESS`: InvoiceFi Soroban contract ID
-- `VITE_USDC_ADDRESS`: USDC token contract ID
-- `VITE_SOROBAN_RPC_URL`: Soroban RPC URL
-- `VITE_HORIZON_URL`: Horizon URL
-- `VITE_NETWORK_PASSPHRASE`: Stellar network passphrase
-- `VITE_API_URL`: optional backend API URL
-
-## Common Localhost Issues
-
-### Port already in use
-
-```bash
-lsof -i :3000
-kill <PID>
-```
-
-### Freighter not detected
-- Install Freighter browser extension.
-- Reload the app after installation.
-- Use a testnet account in Freighter.
-
-### Wrong contract/network
-- Verify `.env` values.
-- Confirm passphrase matches testnet: `Test SDF Network ; September 2015`.
-
-### Freighter wrong network selected
-- Switch Freighter to Stellar testnet.
-- Retry wallet connect.
-- The app now surfaces a specific network mismatch message.
-
-### Contract not initialized
-- Ensure contract `init` was called with the intended USDC contract.
-- `fund_invoice`/`repay_invoice` will fail until initialized.
+---
 
 ## Additional Docs
 
-- `FRONTEND_README.md`: frontend features, routes, and component map
-- `LOCALHOST.md`: command-focused localhost runbook
-- `HARDENING_NOTES.md`: contract and frontend hardening notes
+| File | Contents |
+|------|---------|
+| [`contract/README.md`](./contract/README.md) | Full contract API, data structures, CLI examples, events |
+| [`docs/FRONTEND_README.md`](./docs/FRONTEND_README.md) | Component map, routes, preview mode |
+| [`docs/LOCALHOST.md`](./docs/LOCALHOST.md) | Localhost setup and troubleshooting |
+| [`docs/HARDENING_NOTES.md`](./docs/HARDENING_NOTES.md) | Security hardening decisions |
+
+---
+
+## Built at Stellar Bootcamp 2026 Nairobi, Kenya
