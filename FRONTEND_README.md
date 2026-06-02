@@ -1,173 +1,133 @@
-# InvoiceFi - On-Chain Invoice Financing Platform
+# InvoiceFi Frontend
+
+React + TypeScript frontend for on-chain invoice financing on Stellar Testnet.
+
+## Routes
+
+| URL | Description |
+|-----|-------------|
+| `/` | Marketing landing page |
+| `/get-started` | Choose role: supplier, investor, or buyer |
+| `/supplier` | Create invoices, view pipeline |
+| `/investor` | Browse and fund pending invoices |
+| `/buyer` | View obligations and repay invoices |
+
+Navigation uses **React Router**. The header shows role links on dashboard pages and **Get started** on the landing page.
 
 ## Project Structure
 
-```
-stellar-project/
-├── src/
-│   ├── components/
-│   │   ├── Header.tsx                # Top navigation with wallet info
-│   │   ├── DashboardTabs.tsx          # Tab navigation for three dashboards
-│   │   ├── SupplierDashboard.tsx      # Supplier dashboard
-│   │   ├── InvestorDashboard.tsx      # Investor dashboard
-│   │   ├── BuyerDashboard.tsx         # Buyer dashboard
-│   │   ├── CreateInvoiceForm.tsx      # Create invoice form
-│   │   ├── FundInvoiceForm.tsx        # Fund invoice form
-│   │   ├── RepayInvoiceForm.tsx       # Repay invoice form
-│   │   └── InvoiceTable.tsx           # Reusable invoice table
-│   ├── hooks/
-│   │   ├── useWallet.ts              # Wallet management hook
-│   │   └── useInvoices.ts            # Invoice data fetching hooks
-│   ├── utils/
-│   │   ├── soroban.ts                # Soroban contract utilities
-│   │   ├── stellar.ts                # Stellar SDK utilities
-│   │   └── format.ts                 # Formatting utilities
-│   ├── types/
-│   │   └── index.ts                  # TypeScript type definitions
-│   ├── config.ts                     # Configuration and constants
-│   ├── App.tsx                       # Main app component
-│   ├── main.tsx                      # Entry point
-│   └── index.css                     # Global styles
-├── index.html                        # HTML template
-├── package.json                      # Dependencies
-├── tsconfig.json                     # TypeScript config
-├── vite.config.ts                    # Vite configuration
-├── tailwind.config.js                # Tailwind CSS config
-└── postcss.config.js                 # PostCSS config
+```text
+src/
+├── pages/
+│   ├── HomePage.tsx
+│   ├── GetStartedPage.tsx
+│   ├── SupplierPage.tsx
+│   ├── InvestorPage.tsx
+│   └── BuyerPage.tsx
+├── components/
+│   ├── Header.tsx, Footer.tsx, Hero.tsx
+│   ├── DashboardLayout.tsx, PreviewBanner.tsx
+│   ├── SupplierDashboard.tsx, InvestorDashboard.tsx, BuyerDashboard.tsx
+│   ├── CreateInvoiceForm.tsx, FundInvoiceForm.tsx, RepayInvoiceForm.tsx
+│   └── InvoiceTable.tsx, FaqSection.tsx, …
+├── hooks/
+│   ├── useWallet.tsx      # Freighter wallet context
+│   └── useInvoices.ts     # React Query + Soroban / mock data
+├── utils/
+│   ├── soroban.ts         # Contract RPC helpers
+│   ├── stellar.ts         # Freighter + Horizon
+│   └── format.ts
+├── config.ts              # PREVIEW_MODE, env addresses, constants
+├── App.tsx                # Router definition
+└── main.tsx
 ```
 
-## Features
+## Preview Mode
 
-### Supplier Dashboard
-- Connect wallet using Freighter API
-- Create invoices with buyer address, amount, discount rate, and due date
-- View all created invoices in a table
-- Track invoice status (Pending, Funded, Repaid, Overdue, Defaulted)
-- See funded amount and maturity date for each invoice
+In `src/config.ts`:
 
-### Investor Dashboard
-- Browse all pending invoices available for funding
-- View invoice details including supplier credit score
-- See expected yield based on investor yield rate (5%)
-- Fund invoices by clicking FUND button
-- Track funded invoices
+```typescript
+export const PREVIEW_MODE = true  // set false for live Freighter + Soroban
+```
 
-### Buyer Dashboard
-- View invoices where connected wallet is the buyer
-- See amount owed and due date
-- Repay invoices by clicking PAY button
-- Track payment status and days until maturity
+When `true`:
 
-## Technology Stack
+- All three dashboards render with **sample invoices** (no wallet required).
+- **Connect wallet** in the header is disabled.
+- Form submits show a preview toast only.
 
-- **Frontend**: React 18 + TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: React Query
-- **Wallet**: @stellar/freighter-api
-- **Blockchain**: Stellar SDK + Soroban RPC
-- **Forms**: React Hook Form
-- **Notifications**: React Hot Toast
-- **Build Tool**: Vite
+When `false`:
 
-## Setup Instructions
+- Hooks call real Soroban functions in `utils/soroban.ts`.
+- User must connect Freighter and use Testnet USDC.
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Freighter wallet browser extension
+## Configuration
 
-### Installation
+Prefer `.env` (see `.env.example`):
 
-1. Install dependencies:
+```env
+VITE_CONTRACT_ADDRESS=
+VITE_USDC_ADDRESS=
+VITE_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+VITE_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+```
+
+Values fall back to placeholders in `config.ts` if unset.
+
+## Setup
+
 ```bash
 npm install
-```
-
-2. Configure contract address in `src/config.ts`:
-```typescript
-export const CONTRACT_ADDRESS = 'YOUR_DEPLOYED_CONTRACT_ADDRESS'
-export const USDC_ADDRESS = 'YOUR_USDC_TOKEN_ADDRESS'
-```
-
-3. Start development server:
-```bash
+cp .env.example .env   # optional
 npm run dev
 ```
 
-The app will open at `http://localhost:3000`
+Open `http://localhost:3000` → **Get started** → pick a role.
 
-### Build
-
-```bash
-npm run build
-```
-
-### Type Check
+## Scripts
 
 ```bash
-npm run type-check
+npm run dev          # Dev server (port 3000)
+npm run build        # tsc + production build
+npm run type-check   # TypeScript only
+npm run lint         # ESLint
 ```
 
-## Contract Functions
+## Dashboard Features
 
-The frontend interacts with the following Soroban contract functions:
+### Supplier (`/supplier`)
+- Create invoice (buyer address, USDC amount, discount %, due date)
+- Stats: pending / funded / repaid counts
+- Invoice table with status badges
 
-- `create_invoice(supplier, buyer, amount, discount_bps, maturity_time)` - Create new invoice
-- `fund_invoice(invoice_id, investor, usdc_contract, amount)` - Fund an invoice
-- `repay_invoice(invoice_id, buyer, usdc_contract, repayment_amount)` - Repay invoice
-- `get_invoice(invoice_id)` - Get invoice details
-- `get_supplier_invoices(supplier)` - Get supplier's invoices
-- `get_credit_score(supplier)` - Get supplier credit score
-- `mark_overdue(invoice_id)` - Mark invoice as overdue
-- `mark_defaulted(invoice_id)` - Mark invoice as defaulted
-- `update_credit_score(supplier, new_score)` - Update credit score
+### Investor (`/investor`)
+- List pending invoices (amount, discount, yield, credit score)
+- Fund invoice by ID + amount
 
-## Network Configuration
+### Buyer (`/buyer`)
+- List invoices where wallet is buyer (preview uses demo buyer)
+- Repay invoice by ID + amount
+- Days-until-maturity highlighting
 
-- **Network**: Stellar Testnet
-- **RPC URL**: https://soroban-testnet.stellar.org
-- **Horizon URL**: https://horizon-testnet.stellar.org
-- **Network Passphrase**: Test SDF Network ; September 2015
+## Styling
 
-## Key Concepts
+- White + Stellar blue theme (cream background `#F9F7F2`, accent `#2B7CB8`)
+- Tailwind CSS + CSS variables in `index.css`
+- Fonts: Montserrat, Playfair Display, Space Grotesk (loaded in `index.html`)
 
-### Stroops
-USDC amounts are stored in stroops (1 USDC = 10,000,000 stroops). The utility functions handle conversion.
+## Contract Integration
 
-### Basis Points
-Discount rates and yield are stored in basis points (1 basis point = 0.01%). 500 basis points = 5%.
+Hooks in `useInvoices.ts` call:
 
-### Invoice Lifecycle
-1. **Pending** - Created by supplier, awaiting funding
-2. **Funded** - Investor has funded the full amount
-3. **Repaid** - Buyer repaid the invoice with yield to investor
-4. **Overdue** - Maturity date passed, not yet repaid
-5. **Defaulted** - Invoice marked as defaulted
+- `create_invoice`, `fund_invoice`, `repay_invoice`
+- `get_invoice`, `get_supplier_invoices`, `get_all` (pending/buyer lists)
+- `get_credit_score`, `mark_overdue`
 
-## Usage Tips
+See `README.md` for contract build/deploy and initialization (`init` with USDC address).
 
-1. Test with Testnet USDC tokens
-2. Use the same wallet for testing multiple roles (supply, invest, buy)
-3. Check contract events for transaction status
-4. Monitor USDC balance in header
-5. Use mock data during development - replace with actual contract calls
+## Related Docs
 
-## TODO / Next Steps
-
-- [ ] Implement actual Soroban contract calls (currently using mock data)
-- [ ] Add transaction signing with Freighter
-- [ ] Implement USDC balance fetching from blockchain
-- [ ] Add transaction history and events
-- [ ] Implement credit score algorithm
-- [ ] Add default risk assessment
-- [ ] Add analytics dashboard
-- [ ] Implement notification system for contract events
-- [ ] Add more detailed error handling
-- [ ] Deploy to production Stellar network
-
-## Support
-
-For issues or questions, refer to:
-- [Stellar Documentation](https://developers.stellar.org/)
-- [Freighter API Docs](https://github.com/stellar/freighter)
-- [Soroban Documentation](https://soroban.stellar.org/)
+- `README.md` — full repo setup, contract, verification
+- `LOCALHOST.md` — localhost troubleshooting
+- `HARDENING_NOTES.md` — security hardening notes

@@ -86,10 +86,10 @@ export function calculateInvestorYield(principal: string | bigint): string {
 
 // Format credit score with color
 export function getCreditScoreColor(score: number): string {
-  if (score >= 800) return 'text-green-400'
-  if (score >= 700) return 'text-blue-400'
-  if (score >= 600) return 'text-yellow-400'
-  return 'text-red-400'
+  if (score >= 800) return 'text-emerald-700'
+  if (score >= 700) return 'text-stellar'
+  if (score >= 600) return 'text-amber-700'
+  return 'text-red-700'
 }
 
 // Convert string to bigint safely

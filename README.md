@@ -14,18 +14,33 @@ The app supports three roles:
 - Wallet integration: Freighter API
 - Network defaults: Stellar testnet + USDC-compatible token contract
 
+## Frontend Routes
+
+| Path | Page |
+|------|------|
+| `/` | Landing (hero, features, FAQ) |
+| `/get-started` | Role picker (supplier / investor / buyer) |
+| `/supplier` | Supplier dashboard |
+| `/investor` | Investor marketplace |
+| `/buyer` | Buyer payment portal |
+
+## Preview Mode
+
+`src/config.ts` sets `PREVIEW_MODE = true` by default so you can browse all dashboards with sample data and without connecting Freighter. Set it to `false` when wallet + on-chain calls are ready.
+
 ## Repository Structure
 
 ```text
 .
 ├── src/
-│   ├── components/        # UI views (Supplier/Investor/Buyer)
-│   ├── hooks/             # Wallet and invoice hooks
+│   ├── pages/             # Route-level pages (Home, GetStarted, dashboards)
+│   ├── components/        # UI (Header, Hero, dashboards, forms)
+│   ├── hooks/             # useWallet.tsx, useInvoices.ts
 │   ├── utils/             # Soroban + Stellar utilities
 │   ├── types/             # Shared TS types
-│   ├── config.ts          # Env-driven network/contract config
-│   ├── App.tsx
-│   └── main.tsx
+│   ├── lib.rs             # Soroban contract
+│   ├── config.ts          # Env config + PREVIEW_MODE
+│   └── App.tsx            # React Router routes
 ├── Cargo.toml             # Soroban contract crate config
 ├── package.json           # Frontend scripts + deps
 ├── .env.example           # Frontend environment template
@@ -213,6 +228,6 @@ kill <PID>
 
 ## Additional Docs
 
-- `FRONTEND_README.md`: feature-oriented frontend notes
-- `QUICK_START.md`: fast setup checklist
+- `FRONTEND_README.md`: frontend features, routes, and component map
 - `LOCALHOST.md`: command-focused localhost runbook
+- `HARDENING_NOTES.md`: contract and frontend hardening notes

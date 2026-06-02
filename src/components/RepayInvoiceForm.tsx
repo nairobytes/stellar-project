@@ -1,22 +1,21 @@
 import { useForm } from 'react-hook-form'
 import { useRepayInvoice } from '../hooks/useInvoices'
+import { PREVIEW_MODE } from '../config'
 import { useWallet } from '../hooks/useWallet'
 import { RepayInvoiceFormData } from '../types'
-import { BadgeDollarSign, Hash } from 'lucide-react'
-import toast from 'react-hot-toast'
 
 export function RepayInvoiceForm() {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<RepayInvoiceFormData>()
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<RepayInvoiceFormData>()
   const { mutate: repayInvoice, isPending } = useRepayInvoice()
-  const { isConnected, account } = useWallet()
+  const { account } = useWallet()
 
   const onSubmit = (data: RepayInvoiceFormData) => {
-    if (!isConnected) {
-      toast.error('Wallet not connected')
-      return
-    }
-
-    repayInvoice({ buyer: account || '', invoiceId: data.invoiceId, amount: data.amount }, {
+    repayInvoice({ ...data, buyer: account || '' }, {
       onSuccess: () => {
         reset()
       },
@@ -24,17 +23,14 @@ export function RepayInvoiceForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_48px_rgba(11,31,58,0.08)]">
+    <form onSubmit={handleSubmit(onSubmit)} className="card space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold text-[#0B1F3A]">Repay Invoice</h2>
-        <p className="text-sm text-slate-500">Buyer payment confirmation flow</p>
+        <p className="section-label mb-2">Buyer</p>
+        <h3 className="font-serif text-xl font-semibold theme-heading">Repay invoice</h3>
       </div>
 
       <div>
-        <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
-          <Hash className="h-4 w-4 text-[#3E7BFA]" />
-          Invoice ID
-        </label>
+        <label className="input-label">Invoice ID</label>
         <input
           type="number"
           placeholder="1"
@@ -43,14 +39,13 @@ export function RepayInvoiceForm() {
             required: 'Invoice ID is required',
           })}
         />
-        {errors.invoiceId && <p className="mt-1 text-sm text-[#FF6B35]">{errors.invoiceId.message}</p>}
+        {errors.invoiceId && (
+          <p className="mt-1 text-sm text-red-700">{errors.invoiceId.message}</p>
+        )}
       </div>
 
       <div>
-        <label className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
-          <BadgeDollarSign className="h-4 w-4 text-[#3E7BFA]" />
-          Repayment Amount (USDC)
-        </label>
+        <label className="input-label">Repayment amount (USDC)</label>
         <input
           type="number"
           step="0.01"
@@ -61,15 +56,11 @@ export function RepayInvoiceForm() {
             min: { value: 0.01, message: 'Amount must be greater than 0' },
           })}
         />
-        {errors.amount && <p className="mt-1 text-sm text-[#FF6B35]">{errors.amount.message}</p>}
+        {errors.amount && <p className="mt-1 text-sm text-red-700">{errors.amount.message}</p>}
       </div>
 
-      <button
-        type="submit"
-        disabled={isPending || !isConnected}
-        className="w-full rounded-2xl bg-[#0B1F3A] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#102b52] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isPending ? 'Repaying...' : 'Repay Invoice'}
+      <button type="submit" disabled={isPending} className="btn-primary w-full">
+        {isPending ? 'Repaying…' : PREVIEW_MODE ? 'Repay invoice (preview)' : 'Repay invoice'}
       </button>
     </form>
   )

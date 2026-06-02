@@ -2,50 +2,266 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-slate-950 text-slate-50;
-  }
+:root,
+[data-theme="light"] {
+  --background: #f9f7f2;
+  --foreground: #2d2926;
+  --heading: #121110;
+  --muted: rgba(45, 41, 38, 0.78);
+  --card: #ffffff;
+  --panel: #ffffff;
+  --border: rgba(26, 22, 20, 0.12);
+  --header-bg: rgba(249, 247, 242, 0.95);
+  --accent: #2b7cb8;
+  --accent-muted: #1e5a8a;
+  --section-eyebrow: #1e5a8a;
+  --btn-primary-text: #ffffff;
+  --hero-gradient-from: rgba(249, 247, 242, 0.98);
+  --hero-gradient-via: rgba(43, 124, 184, 0.08);
+  --hero-gradient-to: rgba(43, 124, 184, 0.15);
+}
+
+[data-theme="dark"] {
+  --background: #0b1120;
+  --foreground: #e8f4ff;
+  --heading: #ffffff;
+  --muted: rgba(232, 244, 255, 0.65);
+  --card: #111827;
+  --panel: rgba(17, 24, 39, 0.85);
+  --border: rgba(102, 194, 255, 0.15);
+  --header-bg: rgba(11, 17, 32, 0.95);
+  --accent: #66c2ff;
+  --accent-muted: rgba(102, 194, 255, 0.6);
+  --section-eyebrow: #66c2ff;
+  --btn-primary-text: #0b1120;
+  --hero-gradient-from: rgba(11, 17, 32, 0.95);
+  --hero-gradient-via: rgba(11, 17, 32, 0.75);
+  --hero-gradient-to: rgba(102, 194, 255, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  min-height: 100vh;
+  font-family: Montserrat, system-ui, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 @layer components {
+  .theme-bg {
+    background-color: var(--background);
+  }
+
+  .theme-text {
+    color: var(--foreground);
+  }
+
+  .theme-heading {
+    color: var(--heading);
+  }
+
+  .theme-muted {
+    color: var(--muted);
+  }
+
+  .theme-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .theme-header {
+    background-color: var(--header-bg);
+    border-color: var(--border);
+  }
+
+  .theme-border {
+    border-color: var(--border);
+  }
+
   .btn-primary {
-    @apply px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors;
+    @apply inline-flex items-center justify-center px-6 py-3 text-sm font-medium uppercase tracking-[0.15em] transition disabled:opacity-60;
+    background-color: var(--accent);
+    color: var(--btn-primary-text);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center border px-6 py-3 text-sm font-medium uppercase tracking-[0.15em] transition disabled:opacity-60;
+    border-color: var(--border);
+    color: var(--accent);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-color: var(--accent);
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors;
+    @apply btn-ghost;
   }
 
   .btn-success {
-    @apply px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors;
+    @apply btn-primary;
   }
 
-  .input-field {
-    @apply w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
+  .section-label {
+    @apply text-xs uppercase tracking-[0.35em] font-semibold;
+    color: var(--section-eyebrow);
+  }
+
+  .heading-serif {
+    @apply font-serif text-4xl font-semibold leading-tight md:text-5xl;
+    color: var(--heading);
+  }
+
+  .nav-link {
+    @apply text-xs uppercase tracking-[0.25em] transition;
+    color: color-mix(in srgb, var(--foreground) 85%, transparent);
+  }
+
+  .nav-link:hover {
+    color: var(--accent);
+  }
+
+  .nav-link-active {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .card {
-    @apply bg-slate-900 border border-slate-800 rounded-lg p-6 shadow-lg;
+    @apply rounded-sm p-6 shadow-sm;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+  }
+
+  .theme-panel-box {
+    border: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--card) 94%, var(--background));
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 outline-none transition;
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    color: var(--foreground);
+  }
+
+  .input-field:focus {
+    border-color: var(--accent);
+  }
+
+  .input-label {
+    @apply block text-xs font-medium uppercase tracking-[0.15em] mb-2;
+    color: var(--muted);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .text-subtle {
+    color: var(--muted);
+  }
+
+  .hero-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--hero-gradient-from) 0%,
+      var(--hero-gradient-via) 45%,
+      var(--hero-gradient-to) 100%
+    );
+  }
+
+  .hero-mesh {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 90% 20%, rgba(43, 124, 184, 0.12), transparent),
+      radial-gradient(ellipse 60% 50% at 10% 80%, rgba(43, 124, 184, 0.08), transparent);
+  }
+
+  .feature-card {
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .feature-card:hover {
+    box-shadow: 0 12px 40px rgba(43, 124, 184, 0.1);
+  }
+
+  .page-section {
+    background-color: var(--background);
+  }
+
+  .alert-info {
+    @apply card;
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    background-color: color-mix(in srgb, var(--accent) 8%, var(--card));
+    color: var(--accent-muted);
+  }
+
+  .alert-error {
+    @apply card;
+    border-color: rgba(220, 38, 38, 0.35);
+    background-color: rgba(220, 38, 38, 0.06);
+    color: #b91c1c;
+  }
+
+  .stat-value {
+    @apply text-2xl font-semibold font-display;
+    color: var(--accent);
+  }
+
+  .table-head {
+    @apply text-left py-3 px-4 text-xs font-semibold uppercase tracking-[0.15em];
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-row {
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.15s ease;
+  }
+
+  .table-row:hover {
+    background-color: color-mix(in srgb, var(--accent) 6%, transparent);
   }
 
   .badge-pending {
-    @apply inline-block px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm font-medium rounded-full;
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
+    background-color: rgba(217, 119, 6, 0.12);
+    color: #b45309;
   }
 
   .badge-funded {
-    @apply inline-block px-3 py-1 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-full;
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
+    background-color: rgba(43, 124, 184, 0.12);
+    color: #1e5a8a;
   }
 
   .badge-repaid {
-    @apply inline-block px-3 py-1 bg-green-500/20 text-green-400 text-sm font-medium rounded-full;
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
+    background-color: rgba(22, 163, 74, 0.12);
+    color: #15803d;
   }
 
   .badge-overdue {
-    @apply inline-block px-3 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full;
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
+    background-color: rgba(220, 38, 38, 0.12);
+    color: #b91c1c;
   }
 
   .badge-defaulted {
-    @apply inline-block px-3 py-1 bg-red-600/20 text-red-300 text-sm font-medium rounded-full;
+    @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
+    background-color: rgba(127, 29, 29, 0.12);
+    color: #991b1b;
   }
 }
