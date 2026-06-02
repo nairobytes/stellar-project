@@ -1,8 +1,8 @@
 # InvoiceFi
 
-> On-chain invoice financing for SMEs — built on Stellar using Soroban smart contracts in Rust.
+> On-chain invoice financing for SMEs built on Stellar using Soroban smart contracts in Rust.
 
-InvoiceFi eliminates the middleman from invoice financing. Suppliers get early USDC liquidity today. Investors fund invoices at a discount and earn yield at maturity. Corporate buyers repay on-chain. All escrow logic, fund distribution, and credit scoring is enforced entirely by a Soroban smart contract — no banks, no delays, no fraud.
+InvoiceFi eliminates the middleman from invoice financing. Suppliers get early USDC liquidity today. Investors fund invoices at a discount and earn yield at maturity. Corporate buyers repay on-chain. All escrow logic, fund distribution, and credit scoring is enforced entirely by a Soroban smart contract no banks, no delays, no fraud.
 
 ---
 
@@ -49,9 +49,9 @@ Pending → Funded → Repaid
 |--------|---------|
 | `Pending` | Created, waiting for an investor |
 | `Funded` | Investor locked USDC in escrow |
-| `Repaid` | Buyer paid — funds distributed automatically |
+| `Repaid` | Buyer paid funds distributed automatically |
 | `Overdue` | Maturity passed, not yet repaid |
-| `Defaulted` | Marked after grace period — credit score penalised |
+| `Defaulted` | Marked after grace period credit score penalised |
 
 ---
 
@@ -61,7 +61,7 @@ Pending → Funded → Repaid
 |-------|-----------|
 | Smart contract | Rust + Soroban SDK v21 |
 | Blockchain | Stellar Network |
-| Token standard | Stellar Asset Contract (SAC) — USDC |
+| Token standard | Stellar Asset Contract (SAC) USDC |
 | Frontend | React + TypeScript + Vite + Tailwind CSS |
 | Wallet | Freighter API |
 | Dev tooling | Stellar CLI + cargo |
@@ -73,7 +73,7 @@ Pending → Funded → Repaid
 ```
 stellar-project/
 │
-├── contract/                        # Soroban smart contract — live on Stellar Testnet
+├── contract/                        # Soroban smart contract live on Stellar Testnet
 │   ├── src/
 │   │   ├── lib.rs                   # Contract logic: functions, structs, storage, events
 │   │   └── tests.rs                 # 18 unit tests covering full lifecycle
@@ -232,8 +232,8 @@ VITE_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 
 | Path | Page |
 |------|------|
-| `/` | Landing page — hero, features, FAQ |
-| `/get-started` | Role picker — supplier, investor, or buyer |
+| `/` | Landing page hero, features, FAQ |
+| `/get-started` | Role picker supplier, investor, or buyer |
 | `/supplier` | Create invoices, track pipeline, view credit score |
 | `/investor` | Browse pending invoices, fund, track yield |
 | `/buyer` | View obligations, repay invoices |
@@ -275,9 +275,9 @@ cd frontend && npm run build               # must succeed
 
 ## Security Notes
 
-- All USDC token transfers use the Stellar Asset Contract (SAC) interface via `token::Client` — the contract never holds private keys
-- `init()` pins the USDC contract address at deployment — `fund_invoice` and `repay_invoice` reject any token contract that does not match, preventing caller-controlled token substitution
-- All auth enforced using `require_auth()` — suppliers, investors, and buyers must sign their own transactions
+- All USDC token transfers use the Stellar Asset Contract (SAC) interface via `token::Client` the contract never holds private keys
+- `init()` pins the USDC contract address at deployment `fund_invoice` and `repay_invoice` reject any token contract that does not match, preventing caller-controlled token substitution
+- All auth enforced using `require_auth()`  suppliers, investors, and buyers must sign their own transactions
 - Frontend session state is in-memory only — no invoice state persisted in `localStorage`
 
 ---
