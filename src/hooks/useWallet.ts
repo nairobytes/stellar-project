@@ -1,7 +1,6 @@
-import { useContext, createContext, ReactNode, useState, useCallback } from 'react'
-import * as Freighter from '@stellar/freighter-api'
+import { useContext, createContext, ReactNode, useState, useCallback, useEffect, createElement } from 'react'
 import toast from 'react-hot-toast'
-import { connectWallet, getUSDCBalance } from '../utils/stellar'
+import { connectWallet, getUSDCBalance, isFreighterInstalled } from '../utils/stellar'
 import { WalletContextType } from '../types'
 
 // Create wallet context
@@ -13,11 +12,20 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState<string>('0.00')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [freighterAvailable, setFreighterAvailable] = useState(true)
+
+  useEffect(() => {
+    void isFreighterInstalled().then(setFreighterAvailable)
+  }, [])
 
   const connect = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
+      if (!freighterAvailable) {
+        throw new Error('Freighter is not installed')
+      }
+
       const publicKey = await connectWallet()
       setAccount(publicKey)
       
@@ -33,7 +41,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [freighterAvailable])
 
   const disconnect = useCallback(() => {
     setAccount(null)
@@ -64,7 +72,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     refreshBalance,
   }
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
+  return createElement(WalletContext.Provider, { value }, children)
 }
 
 // Hook to use wallet context

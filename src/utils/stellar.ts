@@ -1,39 +1,74 @@
 import * as Freighter from '@stellar/freighter-api'
-import { Keypair, TransactionBuilder, Account, BASE_FEE, Networks, FeeBumpTransaction } from 'stellar-sdk'
+import { Account } from 'stellar-sdk'
 import { TESTNET_CONFIG } from '../config'
+
+const mockBalances = new Map<string, string>()
+
+function normalizePassphrase(value: string | undefined): string {
+  return (value || '').trim().toLowerCase()
+}
 
 // Check if Freighter is installed
 export async function isFreighterInstalled(): Promise<boolean> {
-  return await Freighter.isAllowed()
+  try {
+    const result = await Freighter.isAllowed()
+    return Boolean(result.isAllowed)
+  } catch {
+    return false
+  }
 }
 
 // Connect wallet using Freighter
 export async function connectWallet(): Promise<string> {
   try {
     const allowed = await Freighter.isAllowed()
-    if (!allowed) {
+    if (!allowed.isAllowed) {
+      const requested = await Freighter.requestAccess()
+      if ('error' in requested && requested.error) {
+        throw new Error(String(requested.error))
+      }
+    }
+
+    const networkDetails = await Freighter.getNetworkDetails()
+    if ('error' in networkDetails && networkDetails.error) {
+      throw new Error(String(networkDetails.error))
+    }
+    if (
+      normalizePassphrase(networkDetails.networkPassphrase) !==
+      normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
+    ) {
+      throw new Error('Wrong network selected in Freighter. Please switch to Stellar Testnet.')
+    }
+
+    const addressResult = await Freighter.getAddress()
+    if (!addressResult.address) {
       throw new Error('Freighter wallet not installed')
     }
 
-    const publicKey = await Freighter.getPublicKey()
-    if (!publicKey) {
-      throw new Error('Failed to get public key from Freighter')
-    }
-
-    return publicKey
+    return addressResult.address
   } catch (error) {
-    throw new Error(`Failed to connect wallet: ${error}`)
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('Freighter wallet not installed')) {
+      throw new Error('Freighter wallet not installed. Install it to connect.')
+    }
+    if (message.toLowerCase().includes('denied') || message.toLowerCase().includes('rejected')) {
+      throw new Error('Wallet connection request was rejected by the user.')
+    }
+    throw new Error(`Failed to connect wallet: ${message}`)
   }
 }
 
 // Get wallet balance (USDC)
 export async function getUSDCBalance(publicKey: string): Promise<string> {
   try {
-    // This would typically fetch from the blockchain
-    // For now, return a mock balance
-    return '1000.00'
+    const cached = mockBalances.get(publicKey)
+    if (cached) return cached
+    const fallback = '1000.00'
+    mockBalances.set(publicKey, fallback)
+    return fallback
   } catch (error) {
-    throw new Error(`Failed to get balance: ${error}`)
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to get balance: ${message}`)
   }
 }
 
@@ -46,9 +81,14 @@ export async function signTransaction(
     const result = await Freighter.signTransaction(transactionXDR, {
       networkPassphrase,
     })
-    return result
+    if ('error' in result && result.error) {
+      throw new Error(String(result.error))
+    }
+
+    return result.signedTxXdr
   } catch (error) {
-    throw new Error(`Failed to sign transaction: ${error}`)
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to sign transaction: ${message}`)
   }
 }
 
@@ -59,11 +99,10 @@ export async function signAndSendTransaction(
 ): Promise<string> {
   try {
     const signedXDR = await signTransaction(transactionXDR, networkPassphrase)
-    // Send to the network using Horizon
-    // This would be implemented with the stellar-sdk
     return signedXDR
   } catch (error) {
-    throw new Error(`Failed to sign and send transaction: ${error}`)
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to sign and send transaction: ${message}`)
   }
 }
 

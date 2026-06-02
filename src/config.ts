@@ -1,27 +1,34 @@
-// Network Configuration
 export const TESTNET_CONFIG = {
   network: 'test',
-  rpcUrl: 'https://soroban-testnet.stellar.org',
-  networkPassphrase: 'Test SDF Network ; September 2015',
-  horizonUrl: 'https://horizon-testnet.stellar.org',
-}
+  rpcUrl: import.meta.env.VITE_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
+  networkPassphrase:
+    import.meta.env.VITE_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
+  horizonUrl: import.meta.env.VITE_HORIZON_URL || 'https://horizon-testnet.stellar.org',
+};
 
-// Contract Address (Replace with your deployed contract)
-export const CONTRACT_ADDRESS = 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4'
+export const CONTRACT_ADDRESS =
+  import.meta.env.VITE_CONTRACT_ADDRESS ||
+  'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4';
 
-// USDC Token Address on Testnet
-export const USDC_ADDRESS = 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4'
+export const USDC_ADDRESS =
+  import.meta.env.VITE_USDC_ADDRESS ||
+  'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4';
 
-// Network constants
-export const STROOPS_PER_UNIT = 10_000_000 // 1 USDC = 10,000,000 stroops
+export const STROOPS_PER_UNIT = 10_000_000;
+export const BASIS_POINTS_DIVISOR = 10_000;
+export const INVESTOR_YIELD_BPS = 500;
 
-// Basis points for discount calculations
-export const BASIS_POINTS_DIVISOR = 10_000
+export const APP_THEME = {
+  primary: '#0B1F3A',
+  accent: '#3E7BFA',
+  success: '#00C48C',
+  warning: '#FF6B35',
+  background: '#F7FAFC',
+};
 
-// Investor yield rate (in basis points)
-export const INVESTOR_YIELD_BPS = 500 // 5%
+export const NETWORK_LABEL =
+  TESTNET_CONFIG.networkPassphrase.includes('Test') ? 'Testnet' : 'Mainnet';
 
-// Contract function names
 export const CONTRACT_FUNCTIONS = {
   CREATE_INVOICE: 'create_invoice',
   FUND_INVOICE: 'fund_invoice',
@@ -32,4 +39,4 @@ export const CONTRACT_FUNCTIONS = {
   MARK_OVERDUE: 'mark_overdue',
   MARK_DEFAULTED: 'mark_defaulted',
   UPDATE_CREDIT_SCORE: 'update_credit_score',
-}
+};
