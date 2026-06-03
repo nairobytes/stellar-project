@@ -35,12 +35,14 @@ export function HowItWorks() {
           {steps.map((item) => (
             <article
               key={item.step}
-              className="feature-card group relative border theme-border bg-white p-8"
+              className="feature-card group relative border theme-border theme-surface p-8"
             >
-              <span className="font-display text-5xl font-bold text-stellar/15">{item.step}</span>
+              <span className="font-display text-5xl font-bold text-[color-mix(in_srgb,var(--accent)_20%,transparent)]">
+                {item.step}
+              </span>
               <h3 className="mt-4 font-serif text-xl font-semibold theme-heading">{item.title}</h3>
               <p className="mt-3 text-sm leading-7 text-subtle">{item.body}</p>
-              <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-stellar transition-all duration-300 group-hover:w-full" />
+              <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-[var(--accent)] transition-all duration-300 group-hover:w-full" />
             </article>
           ))}
         </div>
