@@ -8,7 +8,7 @@ const rows = [
 
 export function WhyStellar() {
   return (
-    <section className="border-y theme-border bg-stellar/[0.04] py-20 lg:py-24">
+    <section className="border-y theme-border theme-accent-wash py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           <div>
@@ -24,10 +24,10 @@ export function WhyStellar() {
             </p>
           </div>
 
-          <div className="overflow-hidden border theme-border bg-white shadow-sm">
+          <div className="overflow-hidden border theme-border theme-surface shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b theme-border bg-stellar/5">
+                <tr className="border-b theme-border theme-accent-wash-strong">
                   <th className="table-head">Metric</th>
                   <th className="table-head text-accent">Stellar</th>
                   <th className="table-head">Traditional bank</th>
