@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Wallet, X, ExternalLink } from 'lucide-react'
+import { Wallet, X, Smartphone, Monitor } from 'lucide-react'
 import { useWallet } from '../hooks/useWallet'
 import { PREVIEW_MODE, NETWORK_LABEL } from '../config'
 
@@ -16,10 +16,18 @@ export function ConnectWalletModal({
   open,
   onClose,
   title = 'Connect your wallet',
-  description = 'InvoiceFi uses Freighter on Stellar Testnet. Connect before choosing a dashboard so your invoices and payments are tied to your account.',
+  description = 'InvoiceFi uses Stellar Testnet. Connect before choosing a dashboard so invoices and payments are tied to your account.',
   allowClose = true,
 }: ConnectWalletModalProps) {
-  const { connect, isLoading, error, freighterAvailable, isConnected } = useWallet()
+  const {
+    connect,
+    isLoading,
+    error,
+    isConnected,
+    isMobile,
+    walletConnectEnabled,
+    freighterAvailable,
+  } = useWallet()
 
   useEffect(() => {
     if (isConnected && open) {
@@ -41,6 +49,47 @@ export function ConnectWalletModal({
   }, [open, allowClose, onClose])
 
   if (!open || PREVIEW_MODE) return null
+
+  const mobileHint = isMobile ? (
+    <div className="mt-6 border theme-border theme-accent-wash p-4 text-sm leading-7 theme-muted">
+      <p className="flex items-center gap-2 font-medium theme-heading">
+        <Smartphone className="h-4 w-4 text-accent" />
+        On mobile
+      </p>
+      {walletConnectEnabled ? (
+        <p className="mt-2">
+          Tap <strong className="text-accent">Choose wallet</strong> and pick{' '}
+          <strong className="text-accent">WalletConnect</strong> to pair Freighter, xBull, Lobstr, or
+          other Stellar wallets on your phone. You can also use a wallet&apos;s in-app browser if it
+          wraps this site.
+        </p>
+      ) : (
+        <p className="mt-2">
+          WalletConnect is not configured for this deployment. Use a wallet&apos;s in-app browser, or
+          ask your operator to set <code className="text-xs">VITE_WALLET_CONNECT_PROJECT_ID</code>{' '}
+          (free at{' '}
+          <a
+            href="https://cloud.reown.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline-offset-4 hover:underline"
+          >
+            Reown Cloud
+          </a>
+          ).
+        </p>
+      )}
+    </div>
+  ) : (
+    <div className="mt-6 flex items-start gap-2 text-sm theme-muted">
+      <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+      <p>
+        Desktop: choose <strong className="text-accent">Freighter</strong> (extension),{' '}
+        <strong className="text-accent">Albedo</strong>, or another listed wallet. Mobile users can use
+        WalletConnect when enabled.
+      </p>
+    </div>
+  )
 
   return (
     <div
@@ -81,22 +130,13 @@ export function ConnectWalletModal({
           Network: {NETWORK_LABEL}
         </p>
 
-        {!freighterAvailable && (
-          <div className="alert-error mt-6 text-sm">
-            <p className="font-medium">Freighter not detected</p>
-            <p className="mt-2">
-              Install the extension, then refresh this page.
-            </p>
-            <a
-              href="https://www.freighter.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-accent underline-offset-4 hover:underline"
-            >
-              Get Freighter
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </div>
+        {mobileHint}
+
+        {!freighterAvailable && !isMobile && (
+          <p className="alert-error mt-4 text-sm">
+            Freighter extension not detected — you can still connect via Albedo or WalletConnect in the
+            wallet picker.
+          </p>
         )}
 
         {error && (
@@ -109,11 +149,11 @@ export function ConnectWalletModal({
           <button
             type="button"
             onClick={() => void connect()}
-            disabled={isLoading || !freighterAvailable}
+            disabled={isLoading}
             className="btn-primary flex-1 justify-center gap-2"
           >
             <Wallet className="h-4 w-4" />
-            {isLoading ? 'Connecting…' : 'Connect Freighter'}
+            {isLoading ? 'Connecting…' : 'Choose wallet'}
           </button>
           <Link
             to="/"

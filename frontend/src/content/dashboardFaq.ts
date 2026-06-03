@@ -7,7 +7,7 @@ export const sharedFaqs: FaqItem[] = [
   },
   {
     q: 'Which wallet do I need?',
-    a: 'Install the Freighter browser extension, switch to Stellar Testnet, and connect from the header. Your public key is your on-chain identity — InvoiceFi never stores private keys.',
+    a: 'On desktop, use Freighter (extension), Albedo, or another wallet from the connect picker — all on Stellar Testnet. On mobile, choose WalletConnect in the picker and approve in your wallet app (Freighter, xBull, Lobstr, etc.). InvoiceFi never stores private keys; your public key is your on-chain identity.',
   },
   {
     q: 'What currency is used?',

@@ -1,56 +1,35 @@
-import * as Freighter from '@stellar/freighter-api'
 import { Horizon } from 'stellar-sdk'
 import { TESTNET_CONFIG } from '../config'
 import { withRetry } from './retry'
 import { logger } from './logger'
+import {
+  connectViaWalletKit,
+  getKitAddress,
+  signViaWalletKit,
+} from './walletKit'
 
 function horizonServer(): Horizon.Server {
   return new Horizon.Server(TESTNET_CONFIG.horizonUrl, { allowHttp: false })
 }
 
-function normalizePassphrase(value: string | undefined): string {
-  return (value || '').trim().toLowerCase()
-}
-
+/** @deprecated Use wallet kit connect; kept for compatibility checks */
 export async function isFreighterInstalled(): Promise<boolean> {
   try {
-    const result = await Freighter.isAllowed()
-    return Boolean(result.isAllowed !== undefined)
+    const { isAllowed } = await import('@stellar/freighter-api').then((m) => m.isAllowed())
+    return Boolean(isAllowed !== undefined)
   } catch {
     return false
   }
 }
 
 export async function connectWallet(): Promise<string> {
-  const allowed = await Freighter.isAllowed()
-  if (!allowed.isAllowed) {
-    const requested = await Freighter.requestAccess()
-    if ('error' in requested && requested.error) {
-      throw new Error(String(requested.error))
-    }
-  }
+  const publicKey = await connectViaWalletKit()
+  logger.info('Wallet connected', { address: publicKey })
+  return publicKey
+}
 
-  const networkDetails = await Freighter.getNetworkDetails()
-  if ('error' in networkDetails && networkDetails.error) {
-    throw new Error(String(networkDetails.error))
-  }
-
-  if (
-    normalizePassphrase(networkDetails.networkPassphrase) !==
-    normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
-  ) {
-    throw new Error(
-      'Wrong network in Freighter. Please switch to Stellar Testnet.'
-    )
-  }
-
-  const addressResult = await Freighter.getAddress()
-  if (!addressResult.address) {
-    throw new Error('Could not get address from Freighter.')
-  }
-
-  logger.info('Wallet connected', { address: addressResult.address })
-  return addressResult.address
+export async function getConnectedPublicKey(): Promise<string | null> {
+  return getKitAddress()
 }
 
 export async function getUSDCBalance(publicKey: string): Promise<string> {
@@ -81,17 +60,20 @@ export async function getUSDCBalance(publicKey: string): Promise<string> {
 
 export async function signTransaction(
   transactionXDR: string,
-  networkPassphrase: string = TESTNET_CONFIG.networkPassphrase
+  networkPassphrase: string = TESTNET_CONFIG.networkPassphrase,
+  signerPublicKey?: string
 ): Promise<string> {
-  const result = await Freighter.signTransaction(transactionXDR, {
-    networkPassphrase,
-  })
-
-  if ('error' in result && result.error) {
-    throw new Error(`Freighter rejected transaction: ${String(result.error)}`)
+  const address = signerPublicKey ?? (await getKitAddress())
+  if (!address) {
+    throw new Error('No wallet connected. Connect a wallet before signing.')
   }
 
-  return result.signedTxXdr
+  try {
+    return await signViaWalletKit(transactionXDR, address, networkPassphrase)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`Wallet rejected transaction: ${message}`)
+  }
 }
 
 export async function getXLMBalance(publicKey: string): Promise<string> {

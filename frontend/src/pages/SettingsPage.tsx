@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Wallet, RefreshCw, LogOut, ExternalLink } from 'lucide-react'
+import { Wallet, RefreshCw, LogOut } from 'lucide-react'
 import { Footer } from '../components/Footer'
 import { DashboardShell } from '../components/DashboardShell'
 import { ConnectWalletModal } from '../components/ConnectWalletModal'
@@ -16,7 +16,9 @@ export function SettingsPage() {
     balance,
     isLoading,
     error,
-    freighterAvailable,
+    walletLabel,
+    walletConnectEnabled,
+    isMobile,
     disconnect,
     refreshBalance,
     switchWallet,
@@ -47,7 +49,7 @@ export function SettingsPage() {
         open={showConnectModal}
         onClose={() => setShowConnectModal(false)}
         title="Connect a wallet"
-        description="Connect Freighter to view balances and use supplier, investor, or buyer dashboards."
+        description="Connect a Stellar wallet (Freighter, WalletConnect on mobile, Albedo, and others) on Testnet to use the dashboards."
       />
 
       <main className="flex-1 theme-surface">
@@ -55,8 +57,8 @@ export function SettingsPage() {
           <p className="section-label mb-3">Settings</p>
           <h1 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">Wallet</h1>
           <p className="mt-3 text-sm leading-7 theme-muted">
-            Manage your Freighter connection. To use a different account, disconnect or switch wallet
-            and approve the new address in Freighter.
+            Manage your wallet connection. Disconnect or switch wallet to use a different account —
+            on mobile, use WalletConnect when available.
           </p>
 
           <div className="card dashboard-card mt-10 space-y-6">
@@ -95,9 +97,21 @@ export function SettingsPage() {
                   </div>
                 </div>
 
+                {walletLabel && (
+                  <p className="text-sm theme-muted">
+                    Wallet: <span className="text-accent">{walletLabel}</span>
+                  </p>
+                )}
+
                 <p className="text-sm theme-muted">
                   Network: <span className="text-accent">{NETWORK_LABEL}</span>
                 </p>
+
+                {isMobile && !walletConnectEnabled && (
+                  <p className="text-sm text-warning">
+                    WalletConnect is not configured — mobile pairing may be limited. See docs/MOBILE_WALLET.md.
+                  </p>
+                )}
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <button
@@ -130,20 +144,6 @@ export function SettingsPage() {
               </>
             ) : (
               <div className="space-y-4">
-                {!freighterAvailable && !PREVIEW_MODE && (
-                  <p className="text-sm text-error">
-                    Freighter extension not found.{' '}
-                    <a
-                      href="https://www.freighter.app/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-accent underline-offset-4 hover:underline"
-                    >
-                      Install Freighter
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </p>
-                )}
                 {error && <p className="text-sm text-error">{error}</p>}
                 <button
                   type="button"
@@ -152,7 +152,7 @@ export function SettingsPage() {
                   className="btn-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
                 >
                   <Wallet className="h-4 w-4" />
-                  Connect Freighter
+                  Connect wallet
                 </button>
               </div>
             )}

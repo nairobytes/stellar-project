@@ -10,6 +10,13 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: [
+      '@creit.tech/stellar-wallets-kit/sdk',
+      '@creit.tech/stellar-wallets-kit/modules/utils',
+      '@creit.tech/stellar-wallets-kit/modules/wallet-connect',
+    ],
+  },
   server: {
     port: 3000,
     open: true,

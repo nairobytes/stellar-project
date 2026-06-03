@@ -50,7 +50,7 @@ async function simulateAndSend(
   }
 
   const preparedTx = SorobanRpc.assembleTransaction(tx, simResult).build()
-  const signedXdr = await signTransaction(preparedTx.toXDR(), NETWORK_PASSPHRASE)
+  const signedXdr = await signTransaction(preparedTx.toXDR(), NETWORK_PASSPHRASE, callerPublicKey)
 
   const submittedTx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE)
   const sendResult = await withRetry(() => server.sendTransaction(submittedTx))

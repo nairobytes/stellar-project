@@ -43,6 +43,12 @@ export interface WalletContextType {
   balance: string
   isLoading: boolean
   error: string | null
+  /** Active kit wallet id, e.g. freighter, wallet_connect */
+  walletId: string | null
+  walletLabel: string | null
+  walletConnectEnabled: boolean
+  isMobile: boolean
+  /** @deprecated Prefer walletConnectEnabled + kit connect */
   freighterAvailable: boolean
   connect: () => Promise<void>
   disconnect: () => void

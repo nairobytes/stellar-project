@@ -32,6 +32,23 @@ export const APP_THEME = {
 export const NETWORK_LABEL =
   TESTNET_CONFIG.networkPassphrase.includes('Test') ? 'Testnet' : 'Mainnet'
 
+/** WalletConnect / Reown project id — required for mobile wallet pairing */
+export const WALLET_CONNECT_PROJECT_ID =
+  (import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID as string | undefined)?.trim() || ''
+
+export const WALLET_CONNECT_ENABLED = WALLET_CONNECT_PROJECT_ID.length > 0
+
+export const APP_METADATA = {
+  name: 'InvoiceFi',
+  description: 'Invoice financing on Stellar Testnet — connect to create, fund, and repay invoices.',
+  url: typeof window !== 'undefined' ? window.location.origin : 'https://invoicefi.app',
+  icons: [
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/favicon.ico`
+      : 'https://invoicefi.app/favicon.ico',
+  ],
+}
+
 export const CONTRACT_FUNCTIONS = {
   CREATE_INVOICE: 'create_invoice',
   FUND_INVOICE: 'fund_invoice',
