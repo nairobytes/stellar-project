@@ -7,7 +7,7 @@
   --background: #f9f7f2;
   --foreground: #2d2926;
   --heading: #121110;
-  --muted: rgba(45, 41, 38, 0.78);
+  --muted: rgba(45, 41, 38, 0.82);
   --card: #ffffff;
   --panel: #ffffff;
   --border: rgba(26, 22, 20, 0.12);
@@ -19,24 +19,70 @@
   --hero-gradient-from: rgba(249, 247, 242, 0.98);
   --hero-gradient-via: rgba(43, 124, 184, 0.08);
   --hero-gradient-to: rgba(43, 124, 184, 0.15);
+  --accent-wash: rgba(43, 124, 184, 0.06);
+  --accent-wash-strong: rgba(43, 124, 184, 0.12);
+  --cta-bg: #2b7cb8;
+  --cta-text: #ffffff;
+  --cta-muted: rgba(255, 255, 255, 0.82);
+  --cta-btn-bg: #ffffff;
+  --cta-btn-text: #2b7cb8;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --badge-pending-bg: rgba(217, 119, 6, 0.14);
+  --badge-pending-text: #92400e;
+  --badge-funded-bg: rgba(43, 124, 184, 0.14);
+  --badge-funded-text: #1e5a8a;
+  --badge-repaid-bg: rgba(22, 163, 74, 0.14);
+  --badge-repaid-text: #15803d;
+  --badge-overdue-bg: rgba(220, 38, 38, 0.14);
+  --badge-overdue-text: #b91c1c;
+  --badge-defaulted-bg: rgba(127, 29, 29, 0.14);
+  --badge-defaulted-text: #991b1b;
+  --error-text: #b91c1c;
+  --error-bg: rgba(220, 38, 38, 0.08);
+  --error-border: rgba(220, 38, 38, 0.35);
 }
 
 [data-theme="dark"] {
   --background: #0b1120;
   --foreground: #e8f4ff;
   --heading: #ffffff;
-  --muted: rgba(232, 244, 255, 0.65);
+  --muted: rgba(232, 244, 255, 0.82);
   --card: #111827;
   --panel: rgba(17, 24, 39, 0.85);
-  --border: rgba(102, 194, 255, 0.15);
+  --border: rgba(102, 194, 255, 0.22);
   --header-bg: rgba(11, 17, 32, 0.95);
   --accent: #66c2ff;
-  --accent-muted: rgba(102, 194, 255, 0.6);
-  --section-eyebrow: #66c2ff;
+  --accent-muted: #a8dcff;
+  --section-eyebrow: #8fd4ff;
   --btn-primary-text: #0b1120;
   --hero-gradient-from: rgba(11, 17, 32, 0.95);
   --hero-gradient-via: rgba(11, 17, 32, 0.75);
   --hero-gradient-to: rgba(102, 194, 255, 0.12);
+  --accent-wash: rgba(102, 194, 255, 0.08);
+  --accent-wash-strong: rgba(102, 194, 255, 0.16);
+  --cta-bg: #1a4d7a;
+  --cta-text: #ffffff;
+  --cta-muted: rgba(255, 255, 255, 0.88);
+  --cta-btn-bg: #e8f4ff;
+  --cta-btn-text: #0b1120;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --badge-pending-bg: rgba(251, 191, 36, 0.2);
+  --badge-pending-text: #fde68a;
+  --badge-funded-bg: rgba(102, 194, 255, 0.2);
+  --badge-funded-text: #bae6fd;
+  --badge-repaid-bg: rgba(74, 222, 128, 0.2);
+  --badge-repaid-text: #bbf7d0;
+  --badge-overdue-bg: rgba(248, 113, 113, 0.2);
+  --badge-overdue-text: #fecaca;
+  --badge-defaulted-bg: rgba(248, 113, 113, 0.28);
+  --badge-defaulted-text: #fca5a5;
+  --error-text: #fca5a5;
+  --error-bg: rgba(248, 113, 113, 0.12);
+  --error-border: rgba(248, 113, 113, 0.4);
 }
 
 * {
@@ -77,6 +123,10 @@ body {
     border: 1px solid var(--border);
   }
 
+  .theme-surface {
+    background-color: var(--card);
+  }
+
   .theme-header {
     background-color: var(--header-bg);
     border-color: var(--border);
@@ -84,6 +134,14 @@ body {
 
   .theme-border {
     border-color: var(--border);
+  }
+
+  .theme-accent-wash {
+    background-color: var(--accent-wash);
+  }
+
+  .theme-accent-wash-strong {
+    background-color: var(--accent-wash-strong);
   }
 
   .btn-primary {
@@ -143,11 +201,13 @@ body {
     @apply rounded-sm p-6 shadow-sm;
     background-color: var(--card);
     border: 1px solid var(--border);
+    color: var(--foreground);
   }
 
   .theme-panel-box {
     border: 1px solid var(--border);
     background-color: color-mix(in srgb, var(--card) 94%, var(--background));
+    color: var(--foreground);
   }
 
   .input-field {
@@ -155,6 +215,10 @@ body {
     border: 1px solid var(--border);
     background-color: var(--card);
     color: var(--foreground);
+  }
+
+  .input-field::placeholder {
+    color: var(--muted);
   }
 
   .input-field:focus {
@@ -174,6 +238,22 @@ body {
     color: var(--muted);
   }
 
+  .text-success {
+    color: var(--success);
+  }
+
+  .text-warning {
+    color: var(--warning);
+  }
+
+  .text-danger {
+    color: var(--danger);
+  }
+
+  .text-error {
+    color: var(--error-text);
+  }
+
   .hero-gradient {
     background: linear-gradient(
       135deg,
@@ -185,20 +265,22 @@ body {
 
   .hero-mesh {
     background-image:
-      radial-gradient(ellipse 80% 60% at 90% 20%, rgba(43, 124, 184, 0.12), transparent),
-      radial-gradient(ellipse 60% 50% at 10% 80%, rgba(43, 124, 184, 0.08), transparent);
+      radial-gradient(ellipse 80% 60% at 90% 20%, var(--accent-wash-strong), transparent),
+      radial-gradient(ellipse 60% 50% at 10% 80%, var(--accent-wash), transparent);
   }
 
   .feature-card {
     transition: box-shadow 0.25s ease, transform 0.25s ease;
+    color: var(--foreground);
   }
 
   .feature-card:hover {
-    box-shadow: 0 12px 40px rgba(43, 124, 184, 0.1);
+    box-shadow: 0 12px 40px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .page-section {
     background-color: var(--background);
+    color: var(--foreground);
   }
 
   .alert-info {
@@ -210,9 +292,9 @@ body {
 
   .alert-error {
     @apply card;
-    border-color: rgba(220, 38, 38, 0.35);
-    background-color: rgba(220, 38, 38, 0.06);
-    color: #b91c1c;
+    border-color: var(--error-border);
+    background-color: var(--error-bg);
+    color: var(--error-text);
   }
 
   .stat-value {
@@ -229,6 +311,7 @@ body {
   .table-row {
     border-bottom: 1px solid var(--border);
     transition: background-color 0.15s ease;
+    color: var(--foreground);
   }
 
   .table-row:hover {
@@ -237,31 +320,49 @@ body {
 
   .badge-pending {
     @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
-    background-color: rgba(217, 119, 6, 0.12);
-    color: #b45309;
+    background-color: var(--badge-pending-bg);
+    color: var(--badge-pending-text);
   }
 
   .badge-funded {
     @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
-    background-color: rgba(43, 124, 184, 0.12);
-    color: #1e5a8a;
+    background-color: var(--badge-funded-bg);
+    color: var(--badge-funded-text);
   }
 
   .badge-repaid {
     @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
-    background-color: rgba(22, 163, 74, 0.12);
-    color: #15803d;
+    background-color: var(--badge-repaid-bg);
+    color: var(--badge-repaid-text);
   }
 
   .badge-overdue {
     @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
-    background-color: rgba(220, 38, 38, 0.12);
-    color: #b91c1c;
+    background-color: var(--badge-overdue-bg);
+    color: var(--badge-overdue-text);
   }
 
   .badge-defaulted {
     @apply inline-block px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-sm;
-    background-color: rgba(127, 29, 29, 0.12);
-    color: #991b1b;
+    background-color: var(--badge-defaulted-bg);
+    color: var(--badge-defaulted-text);
+  }
+
+  .cta-banner {
+    background-color: var(--cta-bg);
+    color: var(--cta-text);
+  }
+
+  .cta-banner-muted {
+    color: var(--cta-muted);
+  }
+
+  .cta-banner-btn {
+    background-color: var(--cta-btn-bg);
+    color: var(--cta-btn-text);
+  }
+
+  .cta-banner-btn:hover {
+    filter: brightness(0.95);
   }
 }
