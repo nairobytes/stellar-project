@@ -279,6 +279,18 @@ body {
     min-height: clamp(220px, 38vw, 420px);
   }
 
+  .hero-receipt-stage::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    height: 3rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--background), transparent);
+  }
+
   .hero-receipt-glow {
     background: radial-gradient(
       ellipse 80% 60% at 50% 40%,
