@@ -14,7 +14,7 @@ export function DashboardLayout({ role, title, description, children }: Dashboar
   return (
     <div className="min-h-screen theme-bg">
       <Header />
-      <main className="scroll-mt-24 border-t theme-border bg-white">
+      <main className="scroll-mt-24 border-t theme-border theme-surface">
         <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-16">
           <div className="mb-10">
             <p className="section-label mb-3">{role}</p>
