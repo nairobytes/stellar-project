@@ -56,9 +56,9 @@ export function FeaturesSection() {
             <Link
               key={role}
               to={path ?? "#"}
-              className="feature-card flex flex-col border theme-border bg-white p-8 text-left transition hover:border-stellar/40"
+              className="feature-card flex flex-col border theme-border theme-surface p-8 text-left transition hover:border-stellar/40"
             >
-              <div className="flex h-12 w-12 items-center justify-center border theme-border bg-stellar/5">
+              <div className="flex h-12 w-12 items-center justify-center border theme-border theme-accent-wash">
                 <Icon className="h-6 w-6 text-accent" strokeWidth={1.5} />
               </div>
               <p className="mt-6 text-xs uppercase tracking-[0.3em] text-accent">{role}</p>
@@ -66,7 +66,7 @@ export function FeaturesSection() {
               <ul className="mt-6 flex-1 space-y-3">
                 {points.map((point) => (
                   <li key={point} className="flex gap-3 text-sm leading-6 text-subtle">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-stellar" />
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
                     {point}
                   </li>
                 ))}
