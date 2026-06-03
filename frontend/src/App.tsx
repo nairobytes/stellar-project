@@ -6,9 +6,11 @@ import { InvestorPage } from './pages/InvestorPage'
 import { BuyerPage } from './pages/BuyerPage'
 import { GetStartedPage } from './pages/GetStartedPage'
 import { WalletProvider } from './hooks/useWallet'
+import { ThemeProvider } from './hooks/useTheme'
 
 export default function App() {
   return (
+    <ThemeProvider>
     <WalletProvider>
       <BrowserRouter>
         <ScrollToTop />
@@ -21,5 +23,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </WalletProvider>
+    </ThemeProvider>
   )
 }
