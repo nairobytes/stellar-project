@@ -44,7 +44,7 @@ export function CreateInvoiceForm() {
           })}
         />
         {errors.buyerAddress && (
-          <p className="mt-1 text-sm text-red-700">{errors.buyerAddress.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.buyerAddress.message}</p>
         )}
       </div>
 
@@ -60,7 +60,7 @@ export function CreateInvoiceForm() {
             min: { value: 0.01, message: 'Amount must be greater than 0' },
           })}
         />
-        {errors.amount && <p className="mt-1 text-sm text-red-700">{errors.amount.message}</p>}
+        {errors.amount && <p className="mt-1 text-sm text-error">{errors.amount.message}</p>}
       </div>
 
       <div>
@@ -77,7 +77,7 @@ export function CreateInvoiceForm() {
           })}
         />
         {errors.discountRate && (
-          <p className="mt-1 text-sm text-red-700">{errors.discountRate.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.discountRate.message}</p>
         )}
       </div>
 
@@ -90,7 +90,7 @@ export function CreateInvoiceForm() {
             required: 'Due date is required',
           })}
         />
-        {errors.dueDate && <p className="mt-1 text-sm text-red-700">{errors.dueDate.message}</p>}
+        {errors.dueDate && <p className="mt-1 text-sm text-error">{errors.dueDate.message}</p>}
       </div>
 
       <button type="submit" disabled={isPending} className="btn-primary w-full">
