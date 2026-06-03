@@ -204,6 +204,105 @@ body {
     color: var(--foreground);
   }
 
+  .dashboard-card {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      background-color 0.25s ease;
+  }
+
+  /* Hover only on devices with a real pointer (not phones) */
+  @media (hover: hover) and (pointer: fine) {
+    .dashboard-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+      background-color: color-mix(in srgb, var(--accent) 7%, var(--card));
+      box-shadow: 0 12px 36px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+  }
+
+  /* Touch: blue flash on tap + subtle accent border so cards feel “alive” */
+  @media (hover: none) {
+    .dashboard-card {
+      border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    }
+
+    .dashboard-card:active {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+      background-color: color-mix(in srgb, var(--accent) 12%, var(--card));
+      box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+  }
+
+  .dashboard-reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (max-width: 767px) {
+    .dashboard-reveal {
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+
+    .dashboard-reveal-left {
+      transform: translateX(-2rem);
+    }
+
+    .dashboard-reveal-right {
+      transform: translateX(2rem);
+    }
+
+    .dashboard-reveal-left.is-visible {
+      animation: dashboardSlideInLeft 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .dashboard-reveal-right.is-visible {
+      animation: dashboardSlideInRight 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  }
+
+  @keyframes dashboardSlideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes dashboardSlideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-reveal {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+  }
+
+  .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-table {
+    min-width: 42rem;
+    width: 100%;
+  }
+
   .theme-panel-box {
     border: 1px solid var(--border);
     background-color: color-mix(in srgb, var(--card) 94%, var(--background));
@@ -302,6 +401,71 @@ body {
     color: var(--accent);
   }
 
+  .stat-card {
+    @apply rounded-sm border border-transparent px-4 py-5 transition-colors duration-300;
+  }
+
+  .stat-card-value,
+  .stat-card-label,
+  .stat-card-desc {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .stat-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      background-color: color-mix(in srgb, var(--accent) 6%, var(--card));
+    }
+
+    .stat-card:hover .stat-card-value {
+      transform: translateY(-4px);
+    }
+
+    .stat-card:hover .stat-card-label {
+      transform: translateX(6px);
+    }
+
+    .stat-card:hover .stat-card-desc {
+      transform: translateY(3px);
+    }
+
+    .dashboard-card:hover .section-label,
+    .dashboard-card:hover .theme-heading,
+    .dashboard-card:hover .stat-value {
+      transform: translateX(4px);
+    }
+  }
+
+  @media (hover: none) {
+    .stat-card:active .stat-card-value {
+      transform: translateY(-3px);
+    }
+
+    .stat-card:active .stat-card-label {
+      transform: translateX(4px);
+    }
+
+    .stat-card:active .stat-card-desc {
+      transform: translateY(2px);
+    }
+
+    .dashboard-card:active .section-label,
+    .dashboard-card:active .theme-heading,
+    .dashboard-card:active .stat-value {
+      transform: translateX(3px);
+    }
+  }
+
+  .dashboard-card .section-label,
+  .dashboard-card .theme-heading,
+  .dashboard-card .stat-value {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .dashboard-card .stat-value {
+    display: inline-block;
+  }
+
   .table-head {
     @apply text-left py-3 px-4 text-xs font-semibold uppercase tracking-[0.15em];
     color: var(--muted);
@@ -315,7 +479,7 @@ body {
   }
 
   .table-row:hover {
-    background-color: color-mix(in srgb, var(--accent) 6%, transparent);
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
   }
 
   .badge-pending {
@@ -364,5 +528,151 @@ body {
 
   .cta-banner-btn:hover {
     filter: brightness(0.95);
+  }
+
+  /* Landing page — text movement on hover / tap */
+  .landing-page .landing-shift {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .landing-page .landing-hover-block,
+  .landing-page .landing-mini-stat,
+  .landing-page .feature-card,
+  .landing-page .landing-faq-item,
+  .landing-page .landing-cta-inner {
+    transition:
+      border-color 0.3s ease,
+      background-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .landing-page .landing-hover-block:hover {
+      border-radius: 0.125rem;
+    }
+
+    .landing-page .landing-hover-block:hover > .landing-shift:nth-child(1),
+    .landing-page .landing-hover-block:hover .heading-serif,
+    .landing-page .landing-hover-block:hover > .section-label:first-child {
+      transform: translateY(-4px);
+    }
+
+    .landing-page .landing-hover-block:hover > .landing-shift:nth-child(2),
+    .landing-page .landing-hover-block:hover > h2 {
+      transform: translateX(6px);
+    }
+
+    .landing-page .landing-hover-block:hover > .landing-shift:nth-child(3),
+    .landing-page .landing-hover-block:hover > .theme-muted {
+      transform: translateY(4px);
+    }
+
+    .landing-page .landing-mini-stat:hover .landing-shift:first-child {
+      transform: translateY(-4px);
+    }
+
+    .landing-page .landing-mini-stat:hover .landing-shift:last-child {
+      transform: translateX(5px);
+    }
+
+    .landing-page .feature-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+      background-color: color-mix(in srgb, var(--accent) 6%, var(--card));
+      box-shadow: 0 12px 36px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .landing-page .feature-card:hover .landing-shift:nth-child(1) {
+      transform: translateY(-5px);
+    }
+
+    .landing-page .feature-card:hover h3 {
+      transform: translateX(7px);
+    }
+
+    .landing-page .feature-card:hover li.landing-shift {
+      transform: translateX(5px);
+    }
+
+    .landing-page .feature-card:hover li.landing-shift:nth-child(even) {
+      transform: translateX(9px);
+    }
+
+    .landing-page .feature-card:hover .landing-shift:last-child {
+      transform: translateY(3px);
+    }
+
+    .landing-page .landing-faq-item:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+      background-color: color-mix(in srgb, var(--accent) 5%, var(--card));
+    }
+
+    .landing-page .landing-faq-item:hover .landing-shift {
+      transform: translateX(5px);
+    }
+
+    .landing-page .landing-table-row:hover .landing-shift:nth-child(1) {
+      transform: translateX(-4px);
+    }
+
+    .landing-page .landing-table-row:hover .landing-shift:nth-child(2) {
+      transform: translateX(4px);
+    }
+
+    .landing-page .landing-table-row:hover .landing-shift:nth-child(3) {
+      transform: translateX(8px);
+    }
+
+    .landing-page .landing-cta-inner:hover .landing-shift:nth-child(1) {
+      transform: translateY(-3px);
+    }
+
+    .landing-page .landing-cta-inner:hover .landing-shift:nth-child(2) {
+      transform: translateX(6px);
+    }
+
+    .landing-page .landing-cta-inner:hover .landing-shift:nth-child(3) {
+      transform: translateY(4px);
+    }
+  }
+
+  @media (hover: none) {
+    .landing-page .landing-hover-block:active > .landing-shift:nth-child(2),
+    .landing-page .landing-hover-block:active > h2 {
+      transform: translateX(4px);
+    }
+
+    .landing-page .landing-mini-stat:active .landing-shift:first-child {
+      transform: translateY(-3px);
+    }
+
+    .landing-page .feature-card:active h3 {
+      transform: translateX(5px);
+    }
+
+    .landing-page .feature-card:active li.landing-shift {
+      transform: translateX(4px);
+    }
+
+    .landing-page .landing-faq-item:active .landing-shift {
+      transform: translateX(4px);
+    }
+
+    .landing-page .landing-table-row:active .landing-shift {
+      transform: translateX(4px);
+    }
+
+    .landing-page .landing-cta-inner:active .landing-shift:nth-child(2) {
+      transform: translateX(5px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-page .landing-shift,
+    .landing-page .stat-card-value,
+    .landing-page .stat-card-label,
+    .landing-page .stat-card-desc {
+      transition: none !important;
+      transform: none !important;
+    }
   }
 }

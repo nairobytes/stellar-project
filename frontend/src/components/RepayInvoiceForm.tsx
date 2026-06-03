@@ -23,7 +23,7 @@ export function RepayInvoiceForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="card space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="card dashboard-card space-y-5">
       <div>
         <p className="section-label mb-2">Buyer</p>
         <h3 className="font-serif text-xl font-semibold theme-heading">Repay invoice</h3>

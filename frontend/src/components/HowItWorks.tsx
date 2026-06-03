@@ -20,12 +20,12 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="page-section border-b theme-border py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="max-w-2xl">
-          <p className="section-label mb-4">Process</p>
-          <h2 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">
+        <div className="landing-hover-block max-w-2xl">
+          <p className="landing-shift section-label mb-4">Process</p>
+          <h2 className="landing-shift font-serif text-3xl font-semibold theme-heading md:text-4xl">
             How InvoiceFi works
           </h2>
-          <p className="mt-4 text-base leading-7 theme-muted">
+          <p className="landing-shift mt-4 text-base leading-7 theme-muted">
             Three roles, one transparent flow — from invoice creation to automated settlement on
             Stellar Testnet.
           </p>
@@ -37,11 +37,13 @@ export function HowItWorks() {
               key={item.step}
               className="feature-card group relative border theme-border theme-surface p-8"
             >
-              <span className="font-display text-5xl font-bold text-[color-mix(in_srgb,var(--accent)_20%,transparent)]">
+              <span className="landing-shift font-display text-5xl font-bold text-[color-mix(in_srgb,var(--accent)_20%,transparent)]">
                 {item.step}
               </span>
-              <h3 className="mt-4 font-serif text-xl font-semibold theme-heading">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-subtle">{item.body}</p>
+              <h3 className="landing-shift mt-4 font-serif text-xl font-semibold theme-heading">
+                {item.title}
+              </h3>
+              <p className="landing-shift mt-3 text-sm leading-7 text-subtle">{item.body}</p>
               <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-[var(--accent)] transition-all duration-300 group-hover:w-full" />
             </article>
           ))}

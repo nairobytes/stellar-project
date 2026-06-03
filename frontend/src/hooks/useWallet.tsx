@@ -48,6 +48,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     toast.success('Wallet disconnected')
   }, [])
 
+  const switchWallet = useCallback(async () => {
+    setAccount(null)
+    setBalance('0.00')
+    setError(null)
+    await connect()
+  }, [connect])
+
   const refreshBalance = useCallback(async () => {
     if (!account) return
     try {
@@ -65,9 +72,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     balance,
     isLoading,
     error,
+    freighterAvailable,
     connect,
     disconnect,
     refreshBalance,
+    switchWallet,
   }
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>

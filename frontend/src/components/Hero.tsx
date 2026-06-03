@@ -12,13 +12,13 @@ export function Hero() {
       <div className="hero-gradient absolute inset-0" aria-hidden />
 
       <div className="relative mx-auto max-w-7xl px-6 py-20 lg:px-10 lg:py-28">
-        <div className="max-w-2xl animate-fade-up">
-          <h1 className="heading-serif">
+        <div className="landing-hover-block max-w-2xl animate-fade-up">
+          <h1 className="heading-serif landing-shift">
             Turn invoices into
-            <span className="text-accent block">instant liquidity.</span>
+            <span className="text-accent block landing-shift">instant liquidity.</span>
           </h1>
 
-          <p className="mt-6 text-base leading-8 theme-muted md:text-lg">
+          <p className="landing-shift mt-6 text-base leading-8 theme-muted md:text-lg">
             InvoiceFi connects Kenyan suppliers, yield-seeking investors, and corporate
             buyers on Stellar. Smart contracts hold USDC in escrow and distribute funds
             automatically — no banks, no paper, no delays.
@@ -42,17 +42,17 @@ export function Hero() {
           </div>
 
           <div className="mt-12 grid grid-cols-1 gap-6 border-t theme-border pt-8 sm:grid-cols-3">
-            <div>
-              <p className="font-display text-2xl font-bold text-accent md:text-3xl">3–5s</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-subtle">Settlement</p>
+            <div className="landing-mini-stat">
+              <p className="landing-shift font-display text-2xl font-bold text-accent md:text-3xl">3–5s</p>
+              <p className="landing-shift mt-1 text-xs uppercase tracking-[0.2em] text-subtle">Settlement</p>
             </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-accent md:text-3xl">~$0.00001</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-subtle">Per transaction</p>
+            <div className="landing-mini-stat">
+              <p className="landing-shift font-display text-2xl font-bold text-accent md:text-3xl">~$0.00001</p>
+              <p className="landing-shift mt-1 text-xs uppercase tracking-[0.2em] text-subtle">Per transaction</p>
             </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-accent md:text-3xl">24/7</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-subtle">On-chain escrow</p>
+            <div className="landing-mini-stat">
+              <p className="landing-shift font-display text-2xl font-bold text-accent md:text-3xl">24/7</p>
+              <p className="landing-shift mt-1 text-xs uppercase tracking-[0.2em] text-subtle">On-chain escrow</p>
             </div>
           </div>
         </div>

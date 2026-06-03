@@ -27,7 +27,7 @@ export function InvoiceTable({
 }: InvoiceTableProps) {
   if (isLoading) {
     return (
-      <div className="card flex h-32 items-center justify-center">
+      <div className="card dashboard-card flex h-32 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-stellar border-t-transparent" />
       </div>
     )
@@ -43,15 +43,16 @@ export function InvoiceTable({
 
   if (invoices.length === 0) {
     return (
-      <div className="card text-center theme-muted">
+      <div className="card dashboard-card text-center theme-muted">
         <p>No invoices found</p>
       </div>
     )
   }
 
   return (
-    <div className="card overflow-x-auto p-0">
-      <table className="w-full text-sm">
+    <div className="card dashboard-card p-0">
+      <div className="table-scroll rounded-sm">
+        <table className="dashboard-table text-sm">
         <thead>
           <tr>
             <th className="table-head">ID</th>
@@ -107,7 +108,8 @@ export function InvoiceTable({
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   )
 }

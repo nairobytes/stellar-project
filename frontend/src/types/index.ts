@@ -43,7 +43,9 @@ export interface WalletContextType {
   balance: string
   isLoading: boolean
   error: string | null
+  freighterAvailable: boolean
   connect: () => Promise<void>
   disconnect: () => void
   refreshBalance: () => Promise<void>
+  switchWallet: () => Promise<void>
 }

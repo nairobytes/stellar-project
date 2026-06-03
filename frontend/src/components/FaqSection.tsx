@@ -1,22 +1,21 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-const faqs = [
+import { sharedFaqs, type FaqItem } from '../content/dashboardFaq'
+
+const faqs: FaqItem[] = [
   {
     q: 'What is InvoiceFi?',
     a: 'InvoiceFi is a decentralised invoice financing platform on Stellar. Suppliers tokenise receivables, investors fund them in USDC for yield, and buyers repay at maturity — all enforced by Soroban smart contracts.',
   },
-  {
-    q: 'Which wallet do I need?',
-    a: 'Use the Freighter browser extension on desktop. Connect from the header, approve on Testnet, and your public key becomes your identity — we never hold private keys.',
-  },
-  {
-    q: 'What currency is used?',
-    a: 'USDC on Stellar Testnet is the settlement asset. Amounts are stored in stroops (1 USDC = 10,000,000 stroops) inside the contract.',
-  },
+  ...sharedFaqs,
   {
     q: 'How does investor yield work?',
     a: 'The contract pays investors 5% (500 basis points) on principal when the buyer repays. Yield is calculated and distributed automatically — no manual reconciliation.',
+  },
+  {
+    q: 'What can each dashboard do?',
+    a: 'Suppliers create and track invoices. Investors fund pending invoices. Buyers repay funded obligations. None of the dashboards can edit or delete invoices after they are on-chain — see the FAQ on each dashboard for role-specific details.',
   },
   {
     q: 'Is this on mainnet?',
@@ -30,9 +29,9 @@ export function FaqSection() {
   return (
     <section id="faq" className="page-section border-t theme-border py-20 lg:py-24">
       <div className="mx-auto max-w-3xl px-6 lg:px-10">
-        <div className="text-center">
-          <p className="section-label mb-4">FAQ</p>
-          <h2 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">
+        <div className="landing-hover-block text-center">
+          <p className="landing-shift section-label mb-4">FAQ</p>
+          <h2 className="landing-shift font-serif text-3xl font-semibold theme-heading md:text-4xl">
             Common questions
           </h2>
         </div>
@@ -41,13 +40,13 @@ export function FaqSection() {
           {faqs.map((faq, i) => {
             const isOpen = open === i
             return (
-              <div key={faq.q} className="border theme-border theme-surface">
+              <div key={faq.q} className="landing-faq-item border theme-border theme-surface">
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
                 >
-                  <span className="font-medium theme-heading">{faq.q}</span>
+                  <span className="landing-shift font-medium theme-heading">{faq.q}</span>
                   <ChevronDown
                     className={`h-5 w-5 shrink-0 text-accent transition-transform ${
                       isOpen ? 'rotate-180' : ''
@@ -55,7 +54,7 @@ export function FaqSection() {
                   />
                 </button>
                 {isOpen && (
-                  <p className="border-t theme-border px-6 pb-5 text-sm leading-7 text-subtle">
+                  <p className="landing-shift border-t theme-border px-6 pb-5 text-sm leading-7 text-subtle">
                     {faq.a}
                   </p>
                 )}

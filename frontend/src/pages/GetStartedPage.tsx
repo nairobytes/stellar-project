@@ -1,7 +1,11 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Building2, LineChart, Store, ArrowRight } from 'lucide-react'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { ConnectWalletModal } from '../components/ConnectWalletModal'
+import { useWallet } from '../hooks/useWallet'
+import { PREVIEW_MODE } from '../config'
 
 const roles = [
   {
@@ -37,9 +41,40 @@ const roles = [
 ]
 
 export function GetStartedPage() {
+  const navigate = useNavigate()
+  const { isConnected } = useWallet()
+  const walletRequired = !PREVIEW_MODE
+  const [showWalletModal, setShowWalletModal] = useState(walletRequired && !isConnected)
+
+  const canChooseRole = !walletRequired || isConnected
+
+  useEffect(() => {
+    if (isConnected) {
+      setShowWalletModal(false)
+    } else if (walletRequired) {
+      setShowWalletModal(true)
+    }
+  }, [isConnected, walletRequired])
+
+  const handleRoleClick = (path: string) => {
+    if (!canChooseRole) {
+      setShowWalletModal(true)
+      return
+    }
+    navigate(path)
+  }
+
   return (
     <div className="min-h-screen theme-bg">
       <Header />
+
+      <ConnectWalletModal
+        open={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        allowClose={canChooseRole}
+        title="Connect before you continue"
+        description="Link your Freighter wallet on Stellar Testnet first. Then you can pick supplier, investor, or buyer dashboard."
+      />
 
       <main className="border-t theme-border theme-surface">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
@@ -49,18 +84,34 @@ export function GetStartedPage() {
               Are you a buyer, supplier, or investor?
             </h1>
             <p className="mt-5 text-base leading-7 theme-muted">
-              Choose your role to open the right dashboard. You can preview the app without
-              connecting a wallet.
+              {canChooseRole
+                ? 'Choose your role to open the right dashboard. Your connected wallet signs all on-chain actions.'
+                : 'Connect Freighter below to continue, then choose the dashboard that matches your role.'}
             </p>
+            {walletRequired && !isConnected && (
+              <button
+                type="button"
+                onClick={() => setShowWalletModal(true)}
+                className="btn-primary mt-8 inline-flex items-center gap-2"
+              >
+                Connect wallet to continue
+              </button>
+            )}
           </div>
 
-          <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
+          <div
+            className={`mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3 ${
+              canChooseRole ? '' : 'pointer-events-none opacity-50'
+            }`}
+            aria-hidden={!canChooseRole}
+          >
             {roles.map((role) => {
               const Icon = role.icon
               return (
-                <Link
+                <button
                   key={role.id}
-                  to={role.path}
+                  type="button"
+                  onClick={() => handleRoleClick(role.path)}
                   className="feature-card group flex flex-col border theme-border theme-surface p-8 text-left transition hover:border-stellar/50 hover:shadow-md"
                 >
                   <div className="flex h-14 w-14 items-center justify-center border theme-border theme-accent-wash transition group-hover:[background-color:var(--accent-wash-strong)]">
@@ -75,10 +126,16 @@ export function GetStartedPage() {
                     {role.cta}
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                   </span>
-                </Link>
+                </button>
               )
             })}
           </div>
+
+          {!canChooseRole && (
+            <p className="mt-6 text-center text-sm text-subtle">
+              Role cards unlock after your wallet is connected.
+            </p>
+          )}
 
           <p className="mt-12 text-center text-sm text-subtle">
             Not sure?{' '}
