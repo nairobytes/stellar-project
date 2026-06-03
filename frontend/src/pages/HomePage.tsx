@@ -34,7 +34,7 @@ export function HomePage() {
       <FaqSection />
       <CTABanner />
 
-      <section id="app" className="scroll-mt-24 border-t theme-border bg-white py-16 lg:py-20">
+      <section id="app" className="scroll-mt-24 border-t theme-border theme-surface py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-6 text-center lg:px-10">
           <p className="section-label mb-3">Live application</p>
           <h2 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">
