@@ -40,12 +40,14 @@ export function FeaturesSection() {
   return (
     <section id="features" className="page-section py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <div className="landing-hover-block mx-auto max-w-2xl text-center">
-          <p className="landing-shift section-label mb-4">Platform</p>
-          <h2 className="landing-shift font-serif text-3xl font-semibold theme-heading md:text-4xl">
+        <div className="landing-hover-block max-w-2xl text-left">
+          <p className="landing-shift section-label mb-4 underline underline-offset-4 decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)]">
+            Platform
+          </p>
+          <h2 className="landing-shift font-serif text-3xl font-semibold theme-heading underline underline-offset-4 decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] md:text-4xl">
             Built for every participant
           </h2>
-          <p className="landing-shift mx-auto mt-4 text-base leading-7 theme-muted">
+          <p className="landing-shift mt-4 text-base leading-7 theme-muted">
             Whether you supply goods, deploy capital, or settle corporate payables — InvoiceFi
             gives each role a dedicated dashboard on Stellar.
           </p>
@@ -61,8 +63,10 @@ export function FeaturesSection() {
               <div className="flex h-12 w-12 items-center justify-center border theme-border theme-accent-wash">
                 <Icon className="h-6 w-6 text-accent" strokeWidth={1.5} />
               </div>
-              <p className="landing-shift mt-6 text-xs uppercase tracking-[0.3em] text-accent">{role}</p>
-              <h3 className="landing-shift mt-2 font-serif text-2xl font-semibold theme-heading">
+              <p className="landing-shift mt-6 text-xs uppercase tracking-[0.3em] text-accent underline underline-offset-4 decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)]">
+                {role}
+              </p>
+              <h3 className="landing-shift mt-2 font-serif text-2xl font-semibold theme-heading underline underline-offset-4 decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)]">
                 {title}
               </h3>
               <ul className="mt-6 flex-1 space-y-3">
