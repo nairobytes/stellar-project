@@ -269,21 +269,73 @@ body {
       radial-gradient(ellipse 60% 50% at 10% 80%, var(--accent-wash), transparent);
   }
 
+  .hero-interactive {
+    cursor: default;
+  }
+
+  .hero-receipt-stage {
+    background: #000000;
+    overflow: hidden;
+    min-height: clamp(220px, 38vw, 420px);
+  }
+
   .hero-receipt-glow {
     background: radial-gradient(
-      circle at 50% 50%,
-      color-mix(in srgb, var(--accent) 22%, transparent),
-      transparent 70%
+      ellipse 80% 60% at 50% 40%,
+      color-mix(in srgb, var(--accent) 28%, transparent),
+      transparent 72%
     );
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+  }
+
+  .hero-interactive:hover .hero-receipt-glow {
+    opacity: 1;
+  }
+
+  .hero-receipt-track {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: heroReceiptFloat 7s ease-in-out infinite;
+  }
+
+  .hero-receipt-track.is-hovering {
+    animation: none;
+    transition: transform 0.12s ease-out;
   }
 
   .hero-receipt-image {
-    filter: drop-shadow(0 20px 40px color-mix(in srgb, var(--foreground) 12%, transparent));
+    width: 100%;
+    max-width: none;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    object-position: center 35%;
+    user-select: none;
+    pointer-events: none;
   }
 
-  [data-theme='dark'] .hero-receipt-image {
-    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.45))
-      brightness(0.96);
+  @keyframes heroReceiptFloat {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(0, -10px, 0) scale(1.01);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-receipt-track {
+      animation: none;
+    }
+
+    .hero-interactive:hover .hero-receipt-track {
+      transform: none !important;
+    }
   }
 
   .feature-card {
