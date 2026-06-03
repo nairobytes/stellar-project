@@ -41,7 +41,7 @@ export function FaqSection() {
           {faqs.map((faq, i) => {
             const isOpen = open === i
             return (
-              <div key={faq.q} className="border theme-border bg-white">
+              <div key={faq.q} className="border theme-border theme-surface">
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
