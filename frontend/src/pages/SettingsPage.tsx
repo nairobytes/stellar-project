@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Wallet, RefreshCw, LogOut, ExternalLink } from 'lucide-react'
-import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { DashboardShell } from '../components/DashboardShell'
 import { ConnectWalletModal } from '../components/ConnectWalletModal'
 import { useWallet } from '../hooks/useWallet'
 import { NETWORK_LABEL, PREVIEW_MODE } from '../config'
@@ -42,8 +42,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen theme-bg">
-      <Header />
+    <DashboardShell>
       <ConnectWalletModal
         open={showConnectModal}
         onClose={() => setShowConnectModal(false)}
@@ -51,7 +50,7 @@ export function SettingsPage() {
         description="Connect Freighter to view balances and use supplier, investor, or buyer dashboards."
       />
 
-      <main className="border-t theme-border theme-surface">
+      <main className="flex-1 theme-surface">
         <div className="mx-auto max-w-2xl px-6 py-12 lg:px-10 lg:py-16">
           <p className="section-label mb-3">Settings</p>
           <h1 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">Wallet</h1>
@@ -168,6 +167,6 @@ export function SettingsPage() {
       </main>
 
       <Footer />
-    </div>
+    </DashboardShell>
   )
 }

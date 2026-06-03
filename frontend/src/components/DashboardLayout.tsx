@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
-import { Header } from './Header'
 import { Footer } from './Footer'
 import { PreviewBanner } from './PreviewBanner'
+import { DashboardShell } from './DashboardShell'
 
 interface DashboardLayoutProps {
   role: string
@@ -12,10 +12,9 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ role, title, description, children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen theme-bg">
-      <Header />
-      <main className="scroll-mt-24 min-w-0 border-t theme-border theme-surface">
-        <div className="mx-auto min-w-0 max-w-7xl px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
+    <DashboardShell>
+      <main className="min-w-0 flex-1 theme-surface">
+        <div className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:px-6 lg:px-10 lg:py-14">
           <div className="mb-10">
             <p className="section-label mb-3">{role}</p>
             <h1 className="font-serif text-3xl font-semibold theme-heading md:text-4xl">
@@ -31,6 +30,6 @@ export function DashboardLayout({ role, title, description, children }: Dashboar
         </div>
       </main>
       <Footer />
-    </div>
+    </DashboardShell>
   )
 }

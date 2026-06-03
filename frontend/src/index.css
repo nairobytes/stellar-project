@@ -530,6 +530,11 @@ body {
     filter: brightness(0.95);
   }
 
+  .dashboard-sidebar {
+    background: linear-gradient(180deg, #2563a8 0%, #1a4d7a 42%, #123d66 100%);
+    color: #ffffff;
+  }
+
   /* Landing page — text movement on hover / tap */
   .landing-page .landing-shift {
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);

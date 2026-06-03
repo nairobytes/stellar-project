@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { PREVIEW_MODE } from '../config'
+import { PREVIEW_MODE, NETWORK_LABEL } from '../config'
 import { useWallet } from '../hooks/useWallet'
 import { Wallet, LogOut, Menu, X, Home, ArrowLeftRight, Settings } from 'lucide-react'
 import { Logo } from './Logo'
 import { ThemeToggle } from './ThemeToggle'
 import { ConnectWalletModal } from './ConnectWalletModal'
 import { WalletHoverCard } from './WalletHoverCard'
-import { NETWORK_LABEL } from '../config'
+import { isDashboardShellPath } from '../constants/dashboard'
 
 const dashboardNav = [
   { label: 'Supplier', path: '/supplier' },
@@ -38,7 +38,14 @@ function navLinkClass(isActive: boolean) {
 
 export function Header() {
   const { pathname } = useLocation()
+
+  if (isDashboardShellPath(pathname)) {
+    return null
+  }
+
   const isDashboard = dashboardPaths.includes(pathname)
+  const isGetStartedPage = pathname === '/get-started'
+  const showMarketingNav = !isDashboard && !isGetStartedPage
   const showSettings = isDashboard || pathname === '/settings'
   const currentRoleLabel = dashboardRoleLabels[pathname]
   const [menuOpen, setMenuOpen] = useState(false)
@@ -138,7 +145,22 @@ export function Header() {
             </nav>
           )}
 
-          {!isDashboard && (
+          {isGetStartedPage && (
+            <nav
+              className="hidden min-w-0 flex-1 items-center justify-center lg:flex"
+              aria-label="Get started navigation"
+            >
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] text-subtle transition hover:text-accent"
+              >
+                <Home className="h-3.5 w-3.5" />
+                Home
+              </Link>
+            </nav>
+          )}
+
+          {showMarketingNav && (
             <nav className="hidden min-w-0 flex-1 items-center justify-center gap-6 lg:flex">
               {marketingNav.map((item) => (
                 <Link
@@ -168,7 +190,7 @@ export function Header() {
               </Link>
             )}
 
-            {!isDashboard && (
+            {showMarketingNav && (
               <Link
                 to="/get-started"
                 className="btn-ghost hidden !px-4 !py-2 text-xs sm:inline-flex"
@@ -236,7 +258,7 @@ export function Header() {
                     Switch role
                   </Link>
                 </>
-              ) : (
+              ) : isGetStartedPage ? null : (
                 <>
                   <Link
                     to="/get-started"
