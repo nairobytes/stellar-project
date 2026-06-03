@@ -41,7 +41,7 @@ export function GetStartedPage() {
     <div className="min-h-screen theme-bg">
       <Header />
 
-      <main className="border-t theme-border bg-white">
+      <main className="border-t theme-border theme-surface">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <p className="section-label mb-4">Get started</p>
@@ -61,9 +61,9 @@ export function GetStartedPage() {
                 <Link
                   key={role.id}
                   to={role.path}
-                  className="feature-card group flex flex-col border theme-border bg-white p-8 text-left transition hover:border-stellar/50 hover:shadow-md"
+                  className="feature-card group flex flex-col border theme-border theme-surface p-8 text-left transition hover:border-stellar/50 hover:shadow-md"
                 >
-                  <div className="flex h-14 w-14 items-center justify-center border theme-border bg-stellar/5 transition group-hover:bg-stellar/10">
+                  <div className="flex h-14 w-14 items-center justify-center border theme-border theme-accent-wash transition group-hover:[background-color:var(--accent-wash-strong)]">
                     <Icon className="h-7 w-7 text-accent" strokeWidth={1.5} />
                   </div>
                   <p className="mt-6 text-xs uppercase tracking-[0.3em] text-accent">
