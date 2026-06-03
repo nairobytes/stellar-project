@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { PREVIEW_MODE } from '../config'
 import { useWallet } from '../hooks/useWallet'
 import { Wallet, LogOut, Menu, X } from 'lucide-react'
+import { Logo } from './Logo'
 
 const dashboardNav = [
   { label: 'Supplier', path: '/supplier' },
@@ -29,7 +30,7 @@ export function Header() {
   const { pathname } = useLocation()
   const isDashboard = dashboardPaths.includes(pathname)
   const [menuOpen, setMenuOpen] = useState(false)
-  const { account, isConnected, balance, isLoading, disconnect } = useWallet()
+  const { account, isConnected, balance, isLoading, connect, disconnect } = useWallet()
 
   const closeMenu = () => setMenuOpen(false)
 
@@ -50,13 +51,21 @@ export function Header() {
   ) : (
     <button
       type="button"
-      disabled
+      onClick={() => {
+        void connect()
+        closeMenu()
+      }}
+      disabled={isLoading || PREVIEW_MODE}
       title={PREVIEW_MODE ? 'Wallet connect disabled in preview mode' : undefined}
-      className="btn-ghost flex w-full cursor-not-allowed items-center justify-center gap-2 opacity-40 lg:w-auto lg:!p-2"
+      className={`btn-ghost flex w-full items-center justify-center gap-2 lg:w-auto lg:!p-2 ${
+        PREVIEW_MODE ? 'cursor-not-allowed opacity-40' : ''
+      }`}
       aria-label="Connect wallet"
     >
       <Wallet className="h-4 w-4" />
-      <span className="text-xs uppercase tracking-[0.15em] lg:hidden">Connect</span>
+      <span className="text-xs uppercase tracking-[0.15em] lg:hidden">
+        {isLoading ? 'Connecting…' : 'Connect'}
+      </span>
     </button>
   )
 
@@ -65,10 +74,13 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:gap-4 lg:px-10">
         <Link
           to="/"
-          className="shrink-0 font-display text-lg font-bold text-accent sm:text-xl md:text-2xl"
+          className="flex shrink-0 items-center gap-2.5 transition hover:opacity-90 sm:gap-3"
           onClick={closeMenu}
         >
-          InvoiceFi
+          <Logo className="h-8 w-auto sm:h-9" />
+          <span className="font-display text-lg font-bold leading-none text-accent sm:text-xl md:text-2xl">
+            InvoiceFi
+          </span>
         </Link>
 
         {/* Desktop: dashboard role tabs */}

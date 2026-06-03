@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Logo } from './Logo'
 import { CONTRACT_ADDRESS } from '../config'
 import { truncateAddress } from '../utils/format'
 
@@ -23,8 +24,8 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
           <div>
-            <Link to="/" className="font-display text-2xl font-bold text-accent hover:opacity-90">
-              InvoiceFi
+            <Link to="/" className="inline-block transition hover:opacity-90">
+              <Logo className="h-14 w-auto" />
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-7 theme-muted">
               Decentralised invoice financing for Kenyan SMEs — built on Stellar &amp;
