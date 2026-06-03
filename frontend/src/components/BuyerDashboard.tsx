@@ -96,10 +96,10 @@ export function BuyerDashboard() {
                       <td
                         className={`py-3 px-4 text-right font-semibold ${
                           daysLeft <= 7
-                            ? 'text-red-700'
+                            ? 'text-danger'
                             : daysLeft <= 30
-                              ? 'text-amber-700'
-                              : 'text-emerald-700'
+                              ? 'text-warning'
+                              : 'text-success'
                         }`}
                       >
                         {daysLeft} days
