@@ -40,7 +40,7 @@ export function FundInvoiceForm() {
           })}
         />
         {errors.invoiceId && (
-          <p className="mt-1 text-sm text-red-700">{errors.invoiceId.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.invoiceId.message}</p>
         )}
       </div>
 
@@ -56,7 +56,7 @@ export function FundInvoiceForm() {
             min: { value: 0.01, message: 'Amount must be greater than 0' },
           })}
         />
-        {errors.amount && <p className="mt-1 text-sm text-red-700">{errors.amount.message}</p>}
+        {errors.amount && <p className="mt-1 text-sm text-error">{errors.amount.message}</p>}
       </div>
 
       <button type="submit" disabled={isPending} className="btn-primary w-full">
