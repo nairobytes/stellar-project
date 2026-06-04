@@ -8,6 +8,7 @@ import {
   Address,
 } from 'stellar-sdk'
 import { signTransaction } from './stellar'
+import { signSorobanAuthorizationEntries } from './sorobanAuth'
 import { CONTRACT_ADDRESS, TESTNET_CONFIG, USDC_ADDRESS, BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS } from '../config'
 import { Invoice, InvoiceStatus } from '../types'
 import { withRetry } from './retry'
@@ -106,7 +107,21 @@ function formatSimulationError(error: string | undefined): string {
   if (/not within the allowed range|Error\(Contract,\s*#10\)/i.test(raw)) {
     return 'Not enough USDC in your wallet for this transaction.'
   }
+  if (/txBadAuth|bad auth/i.test(raw)) {
+    return 'Wallet did not authorize this contract call. Use Freighter on Testnet and approve both the transaction and Soroban authorization prompts.'
+  }
   return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw
+}
+
+function formatSendError(errorResult: unknown): string {
+  const raw = typeof errorResult === 'string' ? errorResult : JSON.stringify(errorResult ?? {})
+  if (/txBadAuth/i.test(raw)) {
+    return 'Transaction was not fully signed. Use Freighter on Testnet and approve the Soroban authorization prompt when funding or repaying.'
+  }
+  if (raw.length > 240) {
+    return `Transaction send failed: ${raw.slice(0, 240)}…`
+  }
+  return `Transaction send failed: ${raw}`
 }
 
 function scValToBigInt(val: unknown): bigint {
@@ -150,14 +165,23 @@ async function simulateAndSend(
 
   const simulatedReturnVal = simResult.result?.retval
   const preparedTx = SorobanRpc.assembleTransaction(tx, simResult).build()
-  const signedXdr = await signTransaction(preparedTx.toXDR(), NETWORK_PASSPHRASE, callerPublicKey)
+  const latestLedger = Number(simResult.latestLedger ?? 0)
+  const authExpiration = (latestLedger > 0 ? latestLedger : 0) + 100
+
+  const authSignedTx = await signSorobanAuthorizationEntries(
+    preparedTx,
+    callerPublicKey,
+    authExpiration
+  )
+
+  const signedXdr = await signTransaction(authSignedTx.toXDR(), NETWORK_PASSPHRASE, callerPublicKey)
 
   const submittedTx = TransactionBuilder.fromXDR(signedXdr, NETWORK_PASSPHRASE)
   const sendResult = await withRetry(() => server.sendTransaction(submittedTx))
 
   if (sendResult.status === 'ERROR') {
     logger.error('Send failed', { result: sendResult })
-    throw new Error(`Transaction send failed: ${JSON.stringify(sendResult.errorResult)}`)
+    throw new Error(formatSendError(sendResult.errorResult))
   }
 
   await waitForTransactionSuccess(sendResult.hash)

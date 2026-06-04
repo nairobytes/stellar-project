@@ -110,6 +110,49 @@ export function useSupplierInvoices(supplierAddress: string | null) {
   })
 }
 
+export function useInvestorInvoices(investorAddress: string | null) {
+  return useQuery({
+    queryKey: ['investorInvoices', investorAddress, PREVIEW_MODE],
+    queryFn: async () => {
+      if (PREVIEW_MODE) {
+        return mockInvoices.filter(
+          (inv) =>
+            inv.investor === DEMO_INVESTOR &&
+            (inv.status === 'Funded' || inv.status === 'Overdue' || inv.status === 'Repaid')
+        )
+      }
+      if (!investorAddress) return []
+
+      const invoices = await getAllInvoices()
+      const mine = invoices.filter(
+        (inv) =>
+          inv.investor != null &&
+          stellarAddressesEqual(inv.investor, investorAddress) &&
+          inv.status !== 'Pending' &&
+          inv.status !== 'Defaulted'
+      )
+
+      await Promise.all(
+        mine.map((invoice) =>
+          autoMarkOverdue(invoice.id, invoice.maturity_time, invoice.status)
+        )
+      )
+
+      const refreshed = await getAllInvoices()
+      return attachInvoiceDescriptions(
+        refreshed.filter(
+          (inv) =>
+            inv.investor != null &&
+            stellarAddressesEqual(inv.investor, investorAddress) &&
+            inv.status !== 'Pending' &&
+            inv.status !== 'Defaulted'
+        )
+      )
+    },
+    enabled: PREVIEW_MODE || !!investorAddress,
+  })
+}
+
 export function usePendingInvoices() {
   return useQuery({
     queryKey: ['pendingInvoices', PREVIEW_MODE],
@@ -276,6 +319,7 @@ export function useFundInvoice() {
       if (PREVIEW_MODE) return
       toast.success('Invoice funded', { id: 'fund-invoice' })
       queryClient.invalidateQueries({ queryKey: ['pendingInvoices'] })
+      queryClient.invalidateQueries({ queryKey: ['investorInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['supplierInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['buyerInvoices'] })
     },
@@ -320,6 +364,7 @@ export function useRepayInvoice() {
       queryClient.invalidateQueries({ queryKey: ['buyerInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['supplierInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['pendingInvoices'] })
+      queryClient.invalidateQueries({ queryKey: ['investorInvoices'] })
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : 'Repayment failed'

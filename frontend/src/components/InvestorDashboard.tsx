@@ -1,8 +1,10 @@
-import { usePendingInvoices } from '../hooks/useInvoices'
+import { useWallet } from '../hooks/useWallet'
+import { useInvestorInvoices, usePendingInvoices } from '../hooks/useInvoices'
 import { AnimatedNumber } from './AnimatedNumber'
 import { FundInvoiceForm } from './FundInvoiceForm'
 import { DashboardFaq } from './DashboardFaq'
 import { DashboardReveal } from './DashboardReveal'
+import { InvoiceTable } from './InvoiceTable'
 import {
   formatUSDC,
   formatBasisPoints,
@@ -10,11 +12,26 @@ import {
   truncateAddress,
   getCreditScoreColor,
 } from '../utils/format'
-import { BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS } from '../config'
+import { BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS, STROOPS_PER_UNIT } from '../config'
 
 export function InvestorDashboard() {
-  const { data: invoices, isLoading, error } = usePendingInvoices()
-  const count = invoices?.length ?? 0
+  const { account } = useWallet()
+  const { data: pending, isLoading: pendingLoading, error: pendingError } = usePendingInvoices()
+  const {
+    data: funded,
+    isLoading: fundedLoading,
+    error: fundedError,
+  } = useInvestorInvoices(account)
+
+  const pendingList = pending ?? []
+  const fundedList = funded ?? []
+  const activeFunded = fundedList.filter(
+    (inv) => inv.status === 'Funded' || inv.status === 'Overdue'
+  )
+  const investedStroops = activeFunded.reduce(
+    (sum, inv) => sum + Number(inv.funded_amount),
+    0
+  )
   const yieldPercent = INVESTOR_YIELD_BPS / 100
 
   return (
@@ -29,10 +46,26 @@ export function InvestorDashboard() {
             <h3 className="font-serif text-xl font-semibold theme-heading">Investor summary</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b theme-border pb-3">
-                <span className="text-sm theme-muted">Available invoices</span>
-                <AnimatedNumber value={count} />
+                <span className="text-sm theme-muted">Pending to fund</span>
+                <AnimatedNumber value={pendingList.length} />
               </div>
               <div className="flex justify-between items-center border-b theme-border pb-3">
+                <span className="text-sm theme-muted">Your funded invoices</span>
+                <AnimatedNumber value={fundedList.length} />
+              </div>
+              <div className="flex justify-between items-center border-b theme-border pb-3">
+                <span className="text-sm theme-muted">Active (awaiting repayment)</span>
+                <AnimatedNumber value={activeFunded.length} />
+              </div>
+              <div className="flex justify-between items-center border-b theme-border pb-3">
+                <span className="text-sm theme-muted">USDC in active positions</span>
+                <AnimatedNumber
+                  value={investedStroops / STROOPS_PER_UNIT}
+                  prefix="$"
+                  decimals={2}
+                />
+              </div>
+              <div className="flex justify-between items-center">
                 <span className="text-sm theme-muted">Yield rate</span>
                 <AnimatedNumber value={yieldPercent} decimals={2} suffix="%" />
               </div>
@@ -55,13 +88,13 @@ export function InvestorDashboard() {
             </h3>
           </div>
 
-          {isLoading ? (
+          {pendingLoading ? (
             <LoadingCard />
-          ) : error ? (
+          ) : pendingError ? (
             <div className="alert-error">
-              <p>Error loading invoices: {error.message}</p>
+              <p>Error loading invoices: {pendingError.message}</p>
             </div>
-          ) : invoices && invoices.length > 0 ? (
+          ) : pendingList.length > 0 ? (
             <div className="card dashboard-card p-0">
               <div className="table-scroll rounded-sm">
                 <table className="dashboard-table text-sm">
@@ -77,7 +110,7 @@ export function InvestorDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {invoices.map((invoice, idx) => {
+                    {pendingList.map((invoice, idx) => {
                       const yieldAmount =
                         (Number(invoice.amount) * INVESTOR_YIELD_BPS) / BASIS_POINTS_DIVISOR
                       const creditScore = 750
@@ -95,7 +128,7 @@ export function InvestorDashboard() {
                             {formatBasisPoints(invoice.discount_bps)}
                           </td>
                           <td className="py-3 px-4 text-right font-semibold theme-heading">
-                            ${(yieldAmount / 10_000_000).toFixed(2)}
+                            ${(yieldAmount / STROOPS_PER_UNIT).toFixed(2)}
                           </td>
                           <td className="py-3 px-4 theme-muted">
                             {formatDate(invoice.maturity_time)}
@@ -116,6 +149,33 @@ export function InvestorDashboard() {
             <div className="card dashboard-card text-center theme-muted">
               <p>No pending invoices available for funding</p>
             </div>
+          )}
+        </section>
+      </DashboardReveal>
+
+      <DashboardReveal side="left" delayMs={280}>
+        <section className="min-w-0">
+          <div className="mb-6">
+            <p className="section-label mb-2">Investor</p>
+            <h3 className="font-serif text-2xl font-semibold theme-heading">Funded invoices</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 theme-muted">
+              Invoices you have funded with this wallet — waiting for buyer repayment or already
+              repaid.
+            </p>
+          </div>
+
+          {!account ? (
+            <div className="card dashboard-card text-center theme-muted">
+              <p>Connect your wallet to see invoices you have funded.</p>
+            </div>
+          ) : (
+            <InvoiceTable
+              invoices={fundedList}
+              isLoading={fundedLoading}
+              error={fundedError}
+              showDescription
+              emptyMessage="No funded invoices yet. Fund a pending invoice above to see it here."
+            />
           )}
         </section>
       </DashboardReveal>

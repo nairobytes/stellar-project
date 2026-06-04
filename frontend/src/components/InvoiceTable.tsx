@@ -17,6 +17,7 @@ interface InvoiceTableProps {
   actionLabel?: string
   /** Show goods / service description column (supplier labels from browser storage) */
   showDescription?: boolean
+  emptyMessage?: string
 }
 
 export function InvoiceTable({
@@ -27,6 +28,7 @@ export function InvoiceTable({
   showActionButton = false,
   actionLabel = 'Action',
   showDescription = false,
+  emptyMessage = 'No invoices found',
 }: InvoiceTableProps) {
   if (isLoading) {
     return (
@@ -47,7 +49,7 @@ export function InvoiceTable({
   if (invoices.length === 0) {
     return (
       <div className="card dashboard-card text-center theme-muted">
-        <p>No invoices found</p>
+        <p>{emptyMessage}</p>
       </div>
     )
   }
