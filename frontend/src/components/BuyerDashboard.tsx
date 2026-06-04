@@ -3,6 +3,7 @@ import { useWallet } from '../hooks/useWallet'
 import { useBuyerInvoices } from '../hooks/useInvoices'
 import { AnimatedNumber } from './AnimatedNumber'
 import { RepayInvoiceForm } from './RepayInvoiceForm'
+import { BuyerUsdcSetup } from './BuyerUsdcSetup'
 import { DashboardFaq } from './DashboardFaq'
 import { DashboardReveal } from './DashboardReveal'
 import { formatUSDC, formatDate, getStatusBadgeClass, truncateAddress } from '../utils/format'
@@ -24,6 +25,7 @@ export function BuyerDashboard() {
 
   return (
     <div className="min-w-0 space-y-10">
+      <BuyerUsdcSetup />
       <div className="grid gap-8 md:grid-cols-2 [&>*]:min-w-0">
         <DashboardReveal side="left">
           <RepayInvoiceForm

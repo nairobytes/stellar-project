@@ -100,8 +100,11 @@ function formatSimulationError(error: string | undefined): string {
   if (/Invoice not found/i.test(raw)) {
     return 'Invoice ID not found on-chain. Check the ID in Your obligations.'
   }
-  if (/insufficient balance|underfunded/i.test(raw)) {
-    return 'Insufficient USDC in your wallet for this repayment. Get testnet USDC first.'
+  if (/trustline entry is missing/i.test(raw)) {
+    return 'The supplier cannot receive USDC yet. They must open the Supplier dashboard and tap Enable USDC payouts once, then you can fund again.'
+  }
+  if (/not within the allowed range|Error\(Contract,\s*#10\)/i.test(raw)) {
+    return 'Not enough USDC in your wallet for this transaction.'
   }
   return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw
 }
@@ -305,6 +308,14 @@ export async function repayInvoice(
 
   await simulateAndSend(buyer, operation)
   return true
+}
+
+/** One-time SAC setup so a wallet can receive USDC payouts (supplier / buyer). */
+export async function establishSacUsdcTrust(account: string): Promise<void> {
+  logger.info('establishSacUsdcTrust', { account })
+  const token = new Contract(USDC_ADDRESS)
+  const operation = token.call('trust', Address.fromString(account).toScVal())
+  await simulateAndSend(account, operation)
 }
 
 export async function getInvoiceCount(): Promise<bigint> {

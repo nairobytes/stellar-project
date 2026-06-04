@@ -1,15 +1,16 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useFundInvoice, usePendingInvoices } from '../hooks/useInvoices'
-import { PREVIEW_MODE } from '../config'
+import { PREVIEW_MODE, STROOPS_PER_UNIT } from '../config'
 import { useWallet } from '../hooks/useWallet'
 import { FundInvoiceFormData } from '../types'
 import { formatUSDC } from '../utils/format'
 
 export function FundInvoiceForm() {
-  const { account } = useWallet()
+  const { account, balance } = useWallet()
   const { data: pending } = usePendingInvoices()
   const list = useMemo(() => pending ?? [], [pending])
+  const [formError, setFormError] = useState<string | null>(null)
 
   const {
     register,
@@ -23,6 +24,9 @@ export function FundInvoiceForm() {
   const invoiceIdField = register('invoiceId', { required: 'Select an invoice' })
   const watchedId = watch('invoiceId')
   const selected = list.find((inv) => inv.id.toString() === watchedId)
+  const walletStroops = Math.floor(Number.parseFloat(balance || '0') * STROOPS_PER_UNIT)
+  const insufficient =
+    selected != null && walletStroops < Number(selected.funded_amount)
 
   useEffect(() => {
     if (selected) {
@@ -33,9 +37,16 @@ export function FundInvoiceForm() {
   const { mutate: fundInvoice, isPending } = useFundInvoice()
 
   const onSubmit = (data: FundInvoiceFormData) => {
-    fundInvoice({ invoiceId: data.invoiceId, investor: account || '' }, {
-      onSuccess: () => reset(),
-    })
+    setFormError(null)
+    fundInvoice(
+      { invoiceId: data.invoiceId, investor: account || '' },
+      {
+        onSuccess: () => reset(),
+        onError: (err) => {
+          setFormError(err instanceof Error ? err.message : 'Funding failed')
+        },
+      },
+    )
   }
 
   return (
@@ -57,7 +68,14 @@ export function FundInvoiceForm() {
             <label className="input-label" htmlFor="fund-invoice-id">
               Pending invoice
             </label>
-            <select id="fund-invoice-id" className="input-field" name={invoiceIdField.name} ref={invoiceIdField.ref} onBlur={invoiceIdField.onBlur} onChange={invoiceIdField.onChange}>
+            <select
+              id="fund-invoice-id"
+              className="input-field"
+              name={invoiceIdField.name}
+              ref={invoiceIdField.ref}
+              onBlur={invoiceIdField.onBlur}
+              onChange={invoiceIdField.onChange}
+            >
               <option value="">Select…</option>
               {list.map((inv) => (
                 <option key={inv.id.toString()} value={inv.id.toString()}>
@@ -75,7 +93,26 @@ export function FundInvoiceForm() {
             <input type="text" readOnly className="input-field opacity-80" {...register('amount')} />
           </div>
 
-          <button type="submit" disabled={isPending || !selected} className="btn-primary w-full">
+          {insufficient && selected && (
+            <div className="border theme-border theme-accent-wash p-4 text-sm leading-6 text-subtle">
+              <p>
+                Your wallet has <strong className="text-accent">${balance}</strong> USDC but this
+                invoice needs <strong className="text-accent">${formatUSDC(selected.funded_amount)}</strong>.
+              </p>
+            </div>
+          )}
+
+          {formError && (
+            <div className="alert-error text-sm leading-6" role="alert">
+              {formError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isPending || !selected || insufficient}
+            className="btn-primary w-full"
+          >
             {isPending ? 'Funding…' : PREVIEW_MODE ? 'Fund invoice (preview)' : 'Fund invoice'}
           </button>
         </>

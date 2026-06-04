@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { Invoice } from '../types'
 import { PREVIEW_MODE, STROOPS_PER_UNIT, USDC_ADDRESS } from '../config'
+import { getSacUsdcBalanceStroops } from '../utils/stellar'
 import {
   createInvoice,
   fundInvoice,
@@ -258,6 +259,14 @@ export function useFundInvoice() {
       if (invoice.status !== 'Pending') {
         throw new Error('Only pending invoices can be funded.')
       }
+      const walletStroops = await getSacUsdcBalanceStroops(data.investor)
+      if (walletStroops < invoice.funded_amount) {
+        const need = (Number(invoice.funded_amount) / STROOPS_PER_UNIT).toFixed(2)
+        const have = (Number(walletStroops) / STROOPS_PER_UNIT).toFixed(2)
+        throw new Error(
+          `You need at least $${need} USDC to fund this invoice (wallet has $${have}).`,
+        )
+      }
       return fundInvoice(BigInt(data.invoiceId), data.investor, USDC_ADDRESS)
     },
     onMutate: () => {
@@ -271,7 +280,8 @@ export function useFundInvoice() {
       queryClient.invalidateQueries({ queryKey: ['buyerInvoices'] })
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Funding failed', { id: 'fund-invoice' })
+      const message = error instanceof Error ? error.message : 'Funding failed'
+      toast.error(message, { id: 'fund-invoice', duration: 8000 })
     },
   })
 }

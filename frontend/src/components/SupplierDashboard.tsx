@@ -5,6 +5,7 @@ import { CreateInvoiceForm } from './CreateInvoiceForm'
 import { DashboardReveal } from './DashboardReveal'
 import { DashboardFaq } from './DashboardFaq'
 import { InvoiceTable } from './InvoiceTable'
+import { SupplierUsdcSetup } from './SupplierUsdcSetup'
 
 export function SupplierDashboard() {
   const { account } = useWallet()
@@ -17,6 +18,7 @@ export function SupplierDashboard() {
 
   return (
     <div className="min-w-0 space-y-10">
+      <SupplierUsdcSetup />
       <div className="grid gap-8 md:grid-cols-2 [&>*]:min-w-0">
         <DashboardReveal side="left">
           <CreateInvoiceForm />

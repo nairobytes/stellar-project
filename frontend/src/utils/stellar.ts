@@ -1,5 +1,5 @@
-import { Horizon } from 'stellar-sdk'
-import { TESTNET_CONFIG } from '../config'
+import { Address, Contract, Horizon, SorobanRpc, TransactionBuilder, scValToNative } from 'stellar-sdk'
+import { TESTNET_CONFIG, USDC_ADDRESS, STROOPS_PER_UNIT } from '../config'
 import { withRetry } from './retry'
 import { logger } from './logger'
 import {
@@ -32,7 +32,34 @@ export async function getConnectedPublicKey(): Promise<string | null> {
   return getKitAddress()
 }
 
+/** USDC held in the Soroban token contract (what fund/repay actually uses). */
+export async function getSacUsdcBalanceStroops(publicKey: string): Promise<bigint> {
+  const server = new SorobanRpc.Server(TESTNET_CONFIG.rpcUrl, { allowHttp: false })
+  const c = new Contract(USDC_ADDRESS)
+  const bootstrap = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+  const account = await withRetry(() => server.getAccount(bootstrap))
+  const tx = new TransactionBuilder(account, {
+    fee: '100000',
+    networkPassphrase: TESTNET_CONFIG.networkPassphrase,
+  })
+    .addOperation(c.call('balance', Address.fromString(publicKey).toScVal()))
+    .setTimeout(30)
+    .build()
+
+  const sim = await withRetry(() => server.simulateTransaction(tx))
+  if (SorobanRpc.Api.isSimulationError(sim)) return 0n
+  if (!sim.result?.retval) return 0n
+  return BigInt(String(scValToNative(sim.result.retval)))
+}
+
 export async function getUSDCBalance(publicKey: string): Promise<string> {
+  try {
+    const stroops = await getSacUsdcBalanceStroops(publicKey)
+    return (Number(stroops) / STROOPS_PER_UNIT).toFixed(2)
+  } catch (err) {
+    logger.warn('SAC USDC balance read failed, trying Horizon', { error: String(err) })
+  }
+
   try {
     const server = horizonServer()
     const account = await withRetry(() => server.loadAccount(publicKey))
@@ -46,7 +73,6 @@ export async function getUSDCBalance(publicKey: string): Promise<string> {
     )
 
     if (!usdcBalance) {
-      logger.info('No USDC balance found — account may not have trustline', { publicKey })
       return '0.00'
     }
 
