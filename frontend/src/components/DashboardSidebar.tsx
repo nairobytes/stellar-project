@@ -44,7 +44,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
 
   return (
     <aside
-      className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 flex w-[min(18rem,85vw)] flex-col border-r border-white/10 shadow-xl transition-transform duration-300 ease-out lg:static lg:z-auto lg:w-72 lg:translate-x-0 lg:shadow-none ${
+      className={`dashboard-sidebar fixed inset-y-0 left-0 z-50 flex h-screen max-h-screen w-[min(18rem,85vw)] flex-col border-r border-white/10 shadow-xl transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:w-72 lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
         open ? 'translate-x-0' : '-translate-x-full'
       }`}
       aria-label="Dashboard navigation"

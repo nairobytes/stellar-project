@@ -23,7 +23,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [sidebarOpen])
 
   return (
-    <div className="min-h-screen theme-bg lg:flex">
+    <div className="min-h-screen theme-bg lg:flex lg:h-screen lg:overflow-hidden">
       {sidebarOpen && (
         <button
           type="button"
@@ -35,11 +35,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
       <DashboardSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-screen">
         <DashboardTopBar onOpenSidebar={() => setSidebarOpen(true)} />
-        {children}
+        <div className="min-h-0 flex-1 lg:overflow-y-auto lg:overflow-x-hidden">
+          {children}
+        </div>
       </div>
-
     </div>
   )
 }

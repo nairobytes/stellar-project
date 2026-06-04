@@ -549,6 +549,15 @@ body {
     color: #ffffff;
   }
 
+  @media (min-width: 1024px) {
+    .dashboard-sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      max-height: 100vh;
+    }
+  }
+
   /* Landing page — text movement on hover / tap */
   .landing-page .landing-shift {
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
