@@ -11,6 +11,7 @@ import {
   getSupplierInvoices,
   markOverdue,
   repayInvoice,
+  stellarAddressesEqual,
 } from '../utils/soroban'
 import {
   attachInvoiceDescriptions,
@@ -138,7 +139,9 @@ export function useBuyerInvoices(buyerAddress: string | null) {
       }
       if (!buyerAddress) return []
       const invoices = await getAllInvoices()
-      const ownInvoices = invoices.filter((invoice) => invoice.buyer === buyerAddress)
+      const ownInvoices = invoices.filter((invoice) =>
+        stellarAddressesEqual(invoice.buyer, buyerAddress)
+      )
       await Promise.all(
         ownInvoices.map((invoice) =>
           autoMarkOverdue(invoice.id, invoice.maturity_time, invoice.status)
@@ -146,7 +149,7 @@ export function useBuyerInvoices(buyerAddress: string | null) {
       )
       const refreshed = await getAllInvoices()
       return attachInvoiceDescriptions(
-        refreshed.filter((invoice) => invoice.buyer === buyerAddress)
+        refreshed.filter((invoice) => stellarAddressesEqual(invoice.buyer, buyerAddress))
       )
     },
     enabled: PREVIEW_MODE || !!buyerAddress,
@@ -245,18 +248,17 @@ export function useFundInvoice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { investor?: string; invoiceId: string; amount: string }) => {
+    mutationFn: async (data: { investor?: string; invoiceId: string }) => {
       if (PREVIEW_MODE) {
         toast('Preview mode — connect wallet to fund invoices', { icon: '👀' })
         return data
       }
       if (!data.investor) throw new Error('Wallet not connected')
-      return fundInvoice(
-        BigInt(data.invoiceId),
-        data.investor,
-        USDC_ADDRESS,
-        toStroops(data.amount)
-      )
+      const invoice = await getInvoice(BigInt(data.invoiceId))
+      if (invoice.status !== 'Pending') {
+        throw new Error('Only pending invoices can be funded.')
+      }
+      return fundInvoice(BigInt(data.invoiceId), data.investor, USDC_ADDRESS)
     },
     onMutate: () => {
       if (!PREVIEW_MODE) toast.loading('Funding invoice...', { id: 'fund-invoice' })
@@ -278,18 +280,26 @@ export function useRepayInvoice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { buyer?: string; invoiceId: string; amount: string }) => {
+    mutationFn: async (data: { buyer?: string; invoiceId: string }) => {
       if (PREVIEW_MODE) {
         toast('Preview mode — connect wallet to repay invoices', { icon: '👀' })
         return data
       }
       if (!data.buyer) throw new Error('Wallet not connected')
-      return repayInvoice(
-        BigInt(data.invoiceId),
-        data.buyer,
-        USDC_ADDRESS,
-        toStroops(data.amount)
-      )
+
+      const invoice = await getInvoice(BigInt(data.invoiceId))
+      if (!stellarAddressesEqual(invoice.buyer, data.buyer)) {
+        throw new Error('Your wallet is not the buyer on this invoice.')
+      }
+      if (invoice.status !== 'Funded' && invoice.status !== 'Overdue') {
+        throw new Error(
+          invoice.status === 'Pending'
+            ? 'This invoice is still Pending. An investor must fund it before you can repay.'
+            : `Invoice status is ${invoice.status} — it cannot be repaid again.`,
+        )
+      }
+
+      return repayInvoice(BigInt(data.invoiceId), data.buyer, USDC_ADDRESS)
     },
     onMutate: () => {
       if (!PREVIEW_MODE) toast.loading('Submitting repayment...', { id: 'repay-invoice' })
@@ -302,9 +312,8 @@ export function useRepayInvoice() {
       queryClient.invalidateQueries({ queryKey: ['pendingInvoices'] })
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Repayment failed', {
-        id: 'repay-invoice',
-      })
+      const message = error instanceof Error ? error.message : 'Repayment failed'
+      toast.error(message, { id: 'repay-invoice', duration: 8000 })
     },
   })
 }

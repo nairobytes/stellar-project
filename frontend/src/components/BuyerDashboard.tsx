@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useWallet } from '../hooks/useWallet'
 import { useBuyerInvoices } from '../hooks/useInvoices'
 import { AnimatedNumber } from './AnimatedNumber'
@@ -7,6 +8,7 @@ import { DashboardReveal } from './DashboardReveal'
 import { formatUSDC, formatDate, getStatusBadgeClass, truncateAddress } from '../utils/format'
 
 export function BuyerDashboard() {
+  const [repayInvoiceId, setRepayInvoiceId] = useState('')
   const { account } = useWallet()
   const { data: invoices, isLoading, error } = useBuyerInvoices(account)
 
@@ -24,7 +26,10 @@ export function BuyerDashboard() {
     <div className="min-w-0 space-y-10">
       <div className="grid gap-8 md:grid-cols-2 [&>*]:min-w-0">
         <DashboardReveal side="left">
-          <RepayInvoiceForm />
+          <RepayInvoiceForm
+            selectedInvoiceId={repayInvoiceId}
+            onSelectedInvoiceIdChange={setRepayInvoiceId}
+          />
         </DashboardReveal>
         <DashboardReveal side="right" delayMs={120}>
           <div className="card dashboard-card space-y-5">
@@ -75,10 +80,13 @@ export function BuyerDashboard() {
                       <th className="table-head text-center">Status</th>
                       <th className="table-head">Due</th>
                       <th className="table-head text-right">Days left</th>
+                      <th className="table-head text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {list.map((invoice, idx) => {
+                      const canRepay =
+                        invoice.status === 'Funded' || invoice.status === 'Overdue'
                       const now = Math.floor(Date.now() / 1000)
                       const daysLeft = Math.max(
                         0,
@@ -113,6 +121,27 @@ export function BuyerDashboard() {
                           >
                             {daysLeft} days
                           </td>
+                          <td className="py-3 px-4 text-right">
+                            {canRepay ? (
+                              <button
+                                type="button"
+                                className="text-xs font-semibold uppercase tracking-wide text-accent hover:underline"
+                                onClick={() => {
+                                  setRepayInvoiceId(invoice.id.toString())
+                                  document.getElementById('repay-invoice-id')?.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                  })
+                                }}
+                              >
+                                Repay
+                              </button>
+                            ) : (
+                              <span className="text-xs theme-muted">
+                                {invoice.status === 'Pending' ? 'Awaiting fund' : '—'}
+                              </span>
+                            )}
+                          </td>
                         </tr>
                       )
                     })}
@@ -121,8 +150,17 @@ export function BuyerDashboard() {
               </div>
             </div>
           ) : (
-            <div className="card dashboard-card text-center theme-muted">
+            <div className="card dashboard-card text-center theme-muted space-y-2">
               <p>No invoices found where you are the buyer</p>
+              {account && (
+                <p className="font-mono text-xs break-all">
+                  Connected: {account}
+                </p>
+              )}
+              <p className="text-xs leading-5">
+                The supplier must enter this exact address when creating the invoice. Pending invoices
+                appear here too — funding is not required to see them.
+              </p>
             </div>
           )}
         </section>

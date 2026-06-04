@@ -55,6 +55,7 @@ export const CONTRACT_FUNCTIONS = {
   REPAY_INVOICE: 'repay_invoice',
   GET_INVOICE: 'get_invoice',
   GET_SUPPLIER_INVOICES: 'get_supplier_invoices',
+  GET_INVOICE_COUNT: 'get_invoice_count',
   GET_CREDIT_SCORE: 'get_credit_score',
   MARK_OVERDUE: 'mark_overdue',
   MARK_DEFAULTED: 'mark_defaulted',

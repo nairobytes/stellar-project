@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+
 const steps = [
   {
     title: 'Pending on-chain',
@@ -18,27 +21,45 @@ const steps = [
 ]
 
 export function InvoiceCreatedSteps() {
+  const [open, setOpen] = useState(false)
+
   return (
     <div className="border-t theme-border pt-5">
-      <p className="text-xs font-medium uppercase tracking-[0.15em] text-subtle">
-        What happens after you create an invoice
-      </p>
-      <ol className="mt-4 space-y-4">
-        {steps.map((step, index) => (
-          <li key={step.title} className="flex gap-3">
-            <span
-              className="flex h-7 w-7 shrink-0 items-center justify-center border theme-border text-xs font-semibold text-accent"
-              aria-hidden
-            >
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold theme-heading">{step.title}</p>
-              <p className="mt-1 text-sm leading-6 text-subtle">{step.body}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="text-xs font-medium uppercase tracking-[0.15em] text-subtle">
+          What happens after you create an invoice
+        </span>
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 text-accent transition-transform ${
+            open ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {open && (
+        <ol className="mt-4 space-y-4">
+          {steps.map((step, index) => (
+            <li key={step.title} className="flex gap-3">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center border theme-border text-xs font-semibold text-accent"
+                aria-hidden
+              >
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold theme-heading">{step.title}</p>
+                <p className="mt-1 text-sm leading-6 text-subtle">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   )
 }

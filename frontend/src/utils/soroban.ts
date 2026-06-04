@@ -68,6 +68,44 @@ function parseScValU64(val: xdr.ScVal): bigint {
   }
 }
 
+/** Normalize Stellar G/C addresses for reliable string comparison */
+export function normalizeStellarAddress(addr: string | null | undefined): string {
+  if (!addr) return ''
+  const trimmed = String(addr).trim()
+  if (!trimmed) return ''
+  try {
+    return Address.fromString(trimmed).toString()
+  } catch {
+    return trimmed.toUpperCase()
+  }
+}
+
+export function stellarAddressesEqual(a: string | null | undefined, b: string | null | undefined): boolean {
+  const na = normalizeStellarAddress(a)
+  const nb = normalizeStellarAddress(b)
+  return na.length > 0 && na === nb
+}
+
+function formatSimulationError(error: string | undefined): string {
+  const raw = error ?? 'Contract simulation failed'
+  if (/cannot be repaid in current status/i.test(raw)) {
+    return 'This invoice is not funded yet. An investor must fund it before you can repay.'
+  }
+  if (/not available for funding/i.test(raw)) {
+    return 'This invoice is not pending — it may already be funded or repaid.'
+  }
+  if (/not the invoice buyer/i.test(raw)) {
+    return 'Your connected wallet is not the buyer on this invoice.'
+  }
+  if (/Invoice not found/i.test(raw)) {
+    return 'Invoice ID not found on-chain. Check the ID in Your obligations.'
+  }
+  if (/insufficient balance|underfunded/i.test(raw)) {
+    return 'Insufficient USDC in your wallet for this repayment. Get testnet USDC first.'
+  }
+  return raw.length > 200 ? `${raw.slice(0, 200)}…` : raw
+}
+
 function scValToBigInt(val: unknown): bigint {
   if (typeof val === 'bigint') return val
   if (typeof val === 'number') return BigInt(Math.trunc(val))
@@ -104,7 +142,7 @@ async function simulateAndSend(
 
   if (SorobanRpc.Api.isSimulationError(simResult)) {
     logger.error('Simulation failed', { error: simResult.error })
-    throw new Error(`Contract simulation failed: ${simResult.error}`)
+    throw new Error(formatSimulationError(simResult.error))
   }
 
   const simulatedReturnVal = simResult.result?.retval
@@ -174,13 +212,23 @@ function parseInvoiceStatus(val: unknown): InvoiceStatus {
   return map[raw] ?? 'Pending'
 }
 
+function parseScValAddress(val: unknown): string {
+  if (val == null) return ''
+  if (typeof val === 'string') return normalizeStellarAddress(val)
+  if (typeof val === 'object' && val !== null) {
+    if ('address' in val) return normalizeStellarAddress(String((val as { address: string }).address))
+    if ('value' in val) return parseScValAddress((val as { value: unknown }).value)
+  }
+  return normalizeStellarAddress(String(val))
+}
+
 function scValToInvoice(val: xdr.ScVal): Invoice {
   const native = scValToNative(val) as Record<string, unknown>
   const investor = native.investor
   return {
     id: scValToBigInt(native.id),
-    supplier: String(native.supplier ?? ''),
-    buyer: String(native.buyer ?? ''),
+    supplier: parseScValAddress(native.supplier),
+    buyer: parseScValAddress(native.buyer),
     amount: scValToBigInt(native.amount),
     discount_bps: Number(native.discount_bps ?? 0),
     funded_amount: scValToBigInt(native.funded_amount),
@@ -189,7 +237,7 @@ function scValToInvoice(val: xdr.ScVal): Invoice {
     investor:
       investor === null || investor === undefined || investor === 'void'
         ? null
-        : String(investor),
+        : parseScValAddress(investor),
     creation_time: scValToBigInt(native.created_at ?? native.creation_time ?? 0),
     repaid_amount: scValToBigInt(native.repaid_at ?? native.repaid_amount ?? 0),
   }
@@ -224,18 +272,16 @@ export async function createInvoice(
 export async function fundInvoice(
   invoice_id: bigint,
   investor: string,
-  usdc_contract: string,
-  amount: bigint
+  usdc_contract: string
 ): Promise<boolean> {
   logger.info('fundInvoice', { invoice_id: invoice_id.toString(), investor })
 
   const c = contract()
   const operation = c.call(
     'fund_invoice',
-    nativeToScVal(invoice_id, { type: 'u64' }),
     Address.fromString(investor).toScVal(),
-    Address.fromString(usdc_contract).toScVal(),
-    nativeToScVal(amount, { type: 'i128' })
+    nativeToScVal(invoice_id, { type: 'u64' }),
+    Address.fromString(usdc_contract).toScVal()
   )
 
   await simulateAndSend(investor, operation)
@@ -245,22 +291,25 @@ export async function fundInvoice(
 export async function repayInvoice(
   invoice_id: bigint,
   buyer: string,
-  usdc_contract: string,
-  repayment_amount: bigint
+  usdc_contract: string
 ): Promise<boolean> {
   logger.info('repayInvoice', { invoice_id: invoice_id.toString(), buyer })
 
   const c = contract()
   const operation = c.call(
     'repay_invoice',
-    nativeToScVal(invoice_id, { type: 'u64' }),
     Address.fromString(buyer).toScVal(),
-    Address.fromString(usdc_contract).toScVal(),
-    nativeToScVal(repayment_amount, { type: 'i128' })
+    nativeToScVal(invoice_id, { type: 'u64' }),
+    Address.fromString(usdc_contract).toScVal()
   )
 
   await simulateAndSend(buyer, operation)
   return true
+}
+
+export async function getInvoiceCount(): Promise<bigint> {
+  const retval = await readContract('get_invoice_count', [])
+  return scValToBigInt(scValToNative(retval))
 }
 
 export async function getInvoice(invoice_id: bigint): Promise<Invoice> {
@@ -349,42 +398,15 @@ export async function updateCreditScore(supplier: string, newScore: number): Pro
 }
 
 export async function getAllInvoices(): Promise<Invoice[]> {
-  logger.info('getAllInvoices — scanning on-chain')
-
-  const server = rpc()
+  logger.info('getAllInvoices — reading invoice count from contract')
 
   try {
-    const events = await withRetry(() =>
-      server.getEvents({
-        startLedger: 1,
-        filters: [
-          {
-            type: 'contract',
-            contractIds: [CONTRACT_ADDRESS],
-            topics: [['*']],
-          },
-        ],
-        limit: 200,
-      })
-    )
+    const count = await getInvoiceCount()
+    if (count <= 0n) return []
 
-    const invoiceIds = new Set<bigint>()
-    for (const event of events.events) {
-      try {
-        const topics = event.topic
-        if (topics.length >= 2) {
-          const idVal = scValToNative(topics[1])
-          invoiceIds.add(BigInt(String(idVal)))
-        }
-      } catch {
-        // skip unparseable events
-      }
-    }
-
-    if (invoiceIds.size === 0) return []
-
+    const ids = Array.from({ length: Number(count) }, (_, i) => BigInt(i + 1))
     const invoices = await Promise.all(
-      Array.from(invoiceIds).map((id) =>
+      ids.map((id) =>
         getInvoice(id).catch((err) => {
           logger.warn('Failed to fetch invoice', { id: id.toString(), error: String(err) })
           return null
