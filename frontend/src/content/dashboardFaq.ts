@@ -18,11 +18,15 @@ export const sharedFaqs: FaqItem[] = [
 export const supplierFaqs: FaqItem[] = [
   {
     q: 'What can I do on the supplier dashboard?',
-    a: 'Create new invoices, view your pipeline (pending, funded, repaid), and track all invoices tied to your wallet. You cannot change or remove invoices after they are on-chain.',
+    a: 'Create new invoices (with an optional “What is this invoice for?” label for different goods or jobs), view your pipeline (pending, funded, repaid), and track all invoices tied to your wallet. You cannot change or remove invoices after they are on-chain.',
+  },
+  {
+    q: 'Where is the invoice description stored?',
+    a: 'The optional goods/service label is saved in your browser, keyed to the on-chain invoice ID, so you can tell invoices apart on your supplier table. It is not part of the Soroban contract yet, so investors and buyers on other devices will not see it until a future on-chain field is deployed.',
   },
   {
     q: 'What happens after I create an invoice?',
-    a: 'The invoice is stored with Pending status. Investors can fund it on the investor dashboard. When funded, USDC is sent to you minus the discount. The buyer repays at maturity.',
+    a: 'You sign a Stellar transaction and the contract saves the invoice as Pending — it shows up in Your invoices immediately. Investors see it on their dashboard and can fund it with USDC; when funded, you receive the discounted amount and status becomes Funded. At the due date you picked, the buyer repays the face value; the contract pays the investor, and your invoice moves to Repaid. You cannot edit or delete it after creation.',
   },
   {
     q: 'Can I cancel a funded invoice?',

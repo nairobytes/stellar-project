@@ -14,11 +14,15 @@ export interface Invoice {
   investor: string | null
   creation_time: bigint
   repaid_amount: bigint
+  /** Goods / service label — stored in browser per invoice (not on-chain yet) */
+  description?: string
 }
 
 // Create invoice form data
 export interface CreateInvoiceFormData {
   buyerAddress: string
+  /** What goods or services this invoice covers */
+  description: string
   amount: string
   discountRate: string
   dueDate: string

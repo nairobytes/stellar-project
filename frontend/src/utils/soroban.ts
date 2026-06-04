@@ -26,10 +26,68 @@ function contract(): Contract {
   return new Contract(CONTRACT_ADDRESS)
 }
 
+/** Poll RPC without parsing XDR meta (stellar-sdk v11 breaks on TransactionMeta v4). */
+async function waitForTransactionSuccess(hash: string): Promise<void> {
+  for (let attempts = 0; attempts < 20; attempts++) {
+    const response = await fetch(RPC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'getTransaction',
+        params: { hash },
+      }),
+    })
+
+    const body = (await response.json()) as {
+      result?: { status?: string }
+      error?: { message?: string }
+    }
+
+    const status = body.result?.status
+    if (status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) return
+    if (status === SorobanRpc.Api.GetTransactionStatus.FAILED) {
+      throw new Error('Transaction failed on-chain')
+    }
+
+    await new Promise((r) => setTimeout(r, 1500))
+  }
+
+  throw new Error('Transaction confirmation timed out')
+}
+
+function parseScValU64(val: xdr.ScVal): bigint {
+  try {
+    return BigInt(String(scValToNative(val)))
+  } catch {
+    if (val.switch().name === 'scvU64') {
+      return BigInt(val.u64().toString())
+    }
+    throw new Error('Could not parse contract return value as u64')
+  }
+}
+
+function scValToBigInt(val: unknown): bigint {
+  if (typeof val === 'bigint') return val
+  if (typeof val === 'number') return BigInt(Math.trunc(val))
+  if (typeof val === 'string') return BigInt(val)
+  if (val && typeof val === 'object' && 'hi' in val && 'lo' in val) {
+    const { hi, lo } = val as { hi: number | bigint; lo: number | bigint }
+    return (BigInt(hi) << 64n) + BigInt(lo)
+  }
+  return BigInt(String(val ?? 0))
+}
+
+type SimulateAndSendResult = {
+  hash: string
+  simulatedReturnVal?: xdr.ScVal
+}
+
 async function simulateAndSend(
   callerPublicKey: string,
   operation: xdr.Operation
-): Promise<SorobanRpc.Api.GetTransactionResponse> {
+): Promise<SimulateAndSendResult> {
   const server = rpc()
 
   const account = await withRetry(() => server.getAccount(callerPublicKey))
@@ -49,6 +107,7 @@ async function simulateAndSend(
     throw new Error(`Contract simulation failed: ${simResult.error}`)
   }
 
+  const simulatedReturnVal = simResult.result?.retval
   const preparedTx = SorobanRpc.assembleTransaction(tx, simResult).build()
   const signedXdr = await signTransaction(preparedTx.toXDR(), NETWORK_PASSPHRASE, callerPublicKey)
 
@@ -60,23 +119,9 @@ async function simulateAndSend(
     throw new Error(`Transaction send failed: ${JSON.stringify(sendResult.errorResult)}`)
   }
 
-  let getResult = await withRetry(() => server.getTransaction(sendResult.hash))
-  let attempts = 0
+  await waitForTransactionSuccess(sendResult.hash)
 
-  while (
-    getResult.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND &&
-    attempts < 20
-  ) {
-    await new Promise((r) => setTimeout(r, 1500))
-    getResult = await withRetry(() => server.getTransaction(sendResult.hash))
-    attempts++
-  }
-
-  if (getResult.status !== SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
-    throw new Error(`Transaction failed with status: ${getResult.status}`)
-  }
-
-  return getResult
+  return { hash: sendResult.hash, simulatedReturnVal }
 }
 
 async function readContract(method: string, args: xdr.ScVal[]): Promise<xdr.ScVal> {
@@ -112,7 +157,13 @@ async function readContract(method: string, args: xdr.ScVal[]): Promise<xdr.ScVa
 }
 
 function parseInvoiceStatus(val: unknown): InvoiceStatus {
-  const s = String(val)
+  const raw =
+    Array.isArray(val) && val.length > 0
+      ? String(val[0])
+      : val && typeof val === 'object' && val !== null && !Array.isArray(val)
+        ? String(Object.keys(val)[0] ?? '')
+        : String(val)
+
   const map: Record<string, InvoiceStatus> = {
     Pending: 'Pending',
     Funded: 'Funded',
@@ -120,23 +171,27 @@ function parseInvoiceStatus(val: unknown): InvoiceStatus {
     Overdue: 'Overdue',
     Defaulted: 'Defaulted',
   }
-  return map[s] ?? 'Pending'
+  return map[raw] ?? 'Pending'
 }
 
 function scValToInvoice(val: xdr.ScVal): Invoice {
   const native = scValToNative(val) as Record<string, unknown>
+  const investor = native.investor
   return {
-    id: BigInt(String(native.id ?? 0)),
+    id: scValToBigInt(native.id),
     supplier: String(native.supplier ?? ''),
     buyer: String(native.buyer ?? ''),
-    amount: BigInt(String(native.amount ?? 0)),
+    amount: scValToBigInt(native.amount),
     discount_bps: Number(native.discount_bps ?? 0),
-    funded_amount: BigInt(String(native.funded_amount ?? 0)),
+    funded_amount: scValToBigInt(native.funded_amount),
     status: parseInvoiceStatus(native.status),
-    maturity_time: BigInt(String(native.maturity_time ?? 0)),
-    investor: native.investor ? String(native.investor) : null,
-    creation_time: BigInt(String(native.created_at ?? native.creation_time ?? 0)),
-    repaid_amount: BigInt(String(native.repaid_at ?? native.repaid_amount ?? 0)),
+    maturity_time: scValToBigInt(native.maturity_time),
+    investor:
+      investor === null || investor === undefined || investor === 'void'
+        ? null
+        : String(investor),
+    creation_time: scValToBigInt(native.created_at ?? native.creation_time ?? 0),
+    repaid_amount: scValToBigInt(native.repaid_at ?? native.repaid_amount ?? 0),
   }
 }
 
@@ -159,11 +214,11 @@ export async function createInvoice(
     nativeToScVal(maturity_time, { type: 'u64' })
   )
 
-  const result = await simulateAndSend(supplier, operation)
-  const retval = (result as SorobanRpc.Api.GetSuccessfulTransactionResponse).returnValue
-  if (!retval) throw new Error('No return value from create_invoice')
-  const id = scValToNative(retval)
-  return BigInt(String(id))
+  const { simulatedReturnVal } = await simulateAndSend(supplier, operation)
+  if (!simulatedReturnVal) {
+    throw new Error('No return value from create_invoice simulation')
+  }
+  return parseScValU64(simulatedReturnVal)
 }
 
 export async function fundInvoice(

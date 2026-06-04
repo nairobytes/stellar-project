@@ -53,7 +53,12 @@ export function SupplierDashboard() {
             <p className="section-label mb-2">Supplier</p>
             <h3 className="font-serif text-2xl font-semibold theme-heading">Your invoices</h3>
           </div>
-          <InvoiceTable invoices={list} isLoading={isLoading} error={error} />
+          <InvoiceTable
+            invoices={list}
+            isLoading={isLoading}
+            error={error}
+            showDescription
+          />
         </section>
       </DashboardReveal>
 

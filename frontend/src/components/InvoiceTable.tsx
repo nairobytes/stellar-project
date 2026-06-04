@@ -15,6 +15,8 @@ interface InvoiceTableProps {
   onAction?: (invoiceId: bigint, action: string) => void
   showActionButton?: boolean
   actionLabel?: string
+  /** Show goods / service description column (supplier labels from browser storage) */
+  showDescription?: boolean
 }
 
 export function InvoiceTable({
@@ -24,6 +26,7 @@ export function InvoiceTable({
   onAction,
   showActionButton = false,
   actionLabel = 'Action',
+  showDescription = false,
 }: InvoiceTableProps) {
   if (isLoading) {
     return (
@@ -56,6 +59,7 @@ export function InvoiceTable({
         <thead>
           <tr>
             <th className="table-head">ID</th>
+            {showDescription && <th className="table-head">Invoice for</th>}
             <th className="table-head">Supplier</th>
             <th className="table-head">Buyer</th>
             <th className="table-head text-right">Amount</th>
@@ -70,6 +74,17 @@ export function InvoiceTable({
           {invoices.map((invoice, idx) => (
             <tr key={idx} className="table-row">
               <td className="py-3 px-4 theme-heading">{invoice.id.toString()}</td>
+              {showDescription && (
+                <td className="py-3 px-4 max-w-[14rem] text-sm theme-muted">
+                  {invoice.description ? (
+                    <span className="line-clamp-2" title={invoice.description}>
+                      {invoice.description}
+                    </span>
+                  ) : (
+                    <span className="text-subtle">—</span>
+                  )}
+                </td>
+              )}
               <td className="py-3 px-4 font-mono text-xs text-accent">
                 {truncateAddress(invoice.supplier, 4, 4)}
               </td>

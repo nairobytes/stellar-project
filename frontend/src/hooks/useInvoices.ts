@@ -12,6 +12,10 @@ import {
   markOverdue,
   repayInvoice,
 } from '../utils/soroban'
+import {
+  attachInvoiceDescriptions,
+  saveInvoiceDescription,
+} from '../utils/invoiceMetadata'
 
 const DEMO_SUPPLIER = 'GBBD47UZQ5EDUJF5MACIXGVS77CNKWVDBLHH2WRZWQHG5CDXHK67DQJS'
 const DEMO_BUYER = 'GBU7K6UYUAFQKLZ6DZPWG7RMABPVJHVTF6D5XXSQ5YNBUYVS75IHVP45'
@@ -90,14 +94,15 @@ export function useSupplierInvoices(supplierAddress: string | null) {
       }
       if (!supplierAddress) return []
       const ids = await getSupplierInvoices(supplierAddress)
-      const invoices = await Promise.all(ids.map((id) => getInvoice(id)))
+      const loaded = await Promise.all(ids.map((id) => getInvoice(id)))
       await Promise.all(
-        invoices.map((invoice) =>
+        loaded.map((invoice) =>
           autoMarkOverdue(invoice.id, invoice.maturity_time, invoice.status)
         )
       )
       const refreshedIds = await getSupplierInvoices(supplierAddress)
-      return Promise.all(refreshedIds.map((id) => getInvoice(id)))
+      const refreshed = await Promise.all(refreshedIds.map((id) => getInvoice(id)))
+      return attachInvoiceDescriptions(refreshed)
     },
     enabled: PREVIEW_MODE || !!supplierAddress,
   })
@@ -117,7 +122,9 @@ export function usePendingInvoices() {
         )
       )
       const refreshed = await getAllInvoices()
-      return refreshed.filter((invoice) => invoice.status === 'Pending')
+      return attachInvoiceDescriptions(
+        refreshed.filter((invoice) => invoice.status === 'Pending')
+      )
     },
   })
 }
@@ -138,7 +145,9 @@ export function useBuyerInvoices(buyerAddress: string | null) {
         )
       )
       const refreshed = await getAllInvoices()
-      return refreshed.filter((invoice) => invoice.buyer === buyerAddress)
+      return attachInvoiceDescriptions(
+        refreshed.filter((invoice) => invoice.buyer === buyerAddress)
+      )
     },
     enabled: PREVIEW_MODE || !!buyerAddress,
   })
@@ -177,6 +186,7 @@ export function useCreateInvoice() {
     mutationFn: async (data: {
       supplier?: string
       buyerAddress: string
+      description?: string
       amount: string
       discountRate: string
       dueDate: string
@@ -190,6 +200,12 @@ export function useCreateInvoice() {
       const discountBps = Math.round(Number.parseFloat(data.discountRate) * 100)
       const maturityTime = toTimestamp(data.dueDate)
       if (amount <= 0n) throw new Error('Amount must be greater than zero')
+      if (discountBps <= 0 || discountBps >= 10_000) {
+        throw new Error('Discount must be between 0.01% and 99.99% (contract uses basis points)')
+      }
+      if (maturityTime <= BigInt(Math.floor(Date.now() / 1000))) {
+        throw new Error('Due date must be in the future')
+      }
       const invoiceId = await createInvoice(
         data.supplier,
         data.buyerAddress,
@@ -197,21 +213,30 @@ export function useCreateInvoice() {
         discountBps,
         maturityTime
       )
-      return { invoiceId: invoiceId.toString() }
+      return {
+        invoiceId: invoiceId.toString(),
+        description: data.description?.trim() ?? '',
+      }
     },
     onMutate: () => {
       if (!PREVIEW_MODE) toast.loading('Creating invoice...', { id: 'create-invoice' })
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       if (PREVIEW_MODE) return
+      if (result.description) {
+        saveInvoiceDescription(result.invoiceId, result.description)
+      }
       toast.success('Invoice created successfully', { id: 'create-invoice' })
       queryClient.invalidateQueries({ queryKey: ['supplierInvoices'] })
       queryClient.invalidateQueries({ queryKey: ['pendingInvoices'] })
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to create invoice', {
-        id: 'create-invoice',
-      })
+      const message = error instanceof Error ? error.message : 'Failed to create invoice'
+      toast.error(message, { id: 'create-invoice' })
+      // Tx may have landed on-chain before a client parse error (e.g. meta v4)
+      if (/bad union switch/i.test(message)) {
+        queryClient.invalidateQueries({ queryKey: ['supplierInvoices'] })
+      }
     },
   })
 }
