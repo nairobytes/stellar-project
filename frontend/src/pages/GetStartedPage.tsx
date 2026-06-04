@@ -56,6 +56,12 @@ export function GetStartedPage() {
     }
   }, [isConnected, walletRequired])
 
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [])
+
   const handleRoleClick = (path: string) => {
     if (!canChooseRole) {
       setShowWalletModal(true)
@@ -71,7 +77,7 @@ export function GetStartedPage() {
       <ConnectWalletModal
         open={showWalletModal}
         onClose={() => setShowWalletModal(false)}
-        allowClose={canChooseRole}
+        allowClose
         title="Connect before you continue"
         description="Link your Freighter wallet on Stellar Testnet first. Then you can pick supplier, investor, or buyer dashboard."
       />

@@ -6,6 +6,7 @@ import { WalletContextType } from '../types'
 import { isMobileBrowser } from '../utils/device'
 import {
   disconnectWalletKit,
+  formatConnectError,
   getKitAddress,
   initWalletKit,
   isKitUserCancelError,
@@ -93,9 +94,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       toast.success('Wallet connected!')
     } catch (err) {
       if (isKitUserCancelError(err)) return
-      const errorMsg = err instanceof Error ? err.message : 'Failed to connect wallet'
+      const errorMsg = formatConnectError(err)
+      if (!errorMsg) return
       setError(errorMsg)
-      toast.error(errorMsg)
+      toast.error(errorMsg, { duration: 8000 })
     } finally {
       setIsLoading(false)
     }

@@ -37,8 +37,9 @@ VITE_WALLET_CONNECT_PROJECT_ID=your_reown_project_id
 ```
 
 1. Create a free project at [Reown Cloud](https://cloud.reown.com/) (formerly WalletConnect Cloud).
-2. Copy the **Project ID** into `VITE_WALLET_CONNECT_PROJECT_ID`.
-3. Restart the Vite dev server.
+2. **Project settings → Allowed origins** — add the exact URL you open on your phone, e.g. `http://192.168.1.67:3000` (not `localhost`).
+3. Copy the **Project ID** into `VITE_WALLET_CONNECT_PROJECT_ID`.
+4. Restart the Vite dev server.
 
 If this variable is **empty**, the WalletConnect module is not registered. Mobile users can still use wallets that open the site in an **in-app browser** (Freighter / Lobstr mobile browser, etc.), but QR-based pairing will not appear.
 
@@ -114,6 +115,7 @@ sequenceDiagram
 | Symptom | Check |
 |---------|--------|
 | No WalletConnect in picker | `VITE_WALLET_CONNECT_PROJECT_ID` set and dev server restarted |
+| “Failed to connect wallet” after WalletConnect | Add your LAN origin to **Allowed origins** at Reown; approve session in Freighter; wait and retry if WC was still starting |
 | “Wrong network” after connect | Wallet set to **Testnet** (not Mainnet) |
 | Sign fails on mobile | Same account connected; wallet app updated; retry after unlocking wallet |
 | Build slow / large bundle | Expected: WC + kit pull in Reown/WalletConnect deps; use production build for real perf testing |

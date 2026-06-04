@@ -36,15 +36,24 @@ export function ConnectWalletModal({
   }, [isConnected, open, onClose])
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      document.body.style.overflow = ''
+      return
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && allowClose) onClose?.()
     }
     document.addEventListener('keydown', onKey)
-    document.body.style.overflow = 'hidden'
+
+    const isNarrow = window.matchMedia('(max-width: 1023px)').matches
+    const prevOverflow = document.body.style.overflow
+    if (!isNarrow) {
+      document.body.style.overflow = 'hidden'
+    }
+
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      document.body.style.overflow = prevOverflow
     }
   }, [open, allowClose, onClose])
 
@@ -54,30 +63,65 @@ export function ConnectWalletModal({
     <div className="mt-6 border theme-border theme-accent-wash p-4 text-sm leading-7 theme-muted">
       <p className="flex items-center gap-2 font-medium theme-heading">
         <Smartphone className="h-4 w-4 text-accent" />
-        On mobile
+        Freighter on your phone
+      </p>
+      <p className="mt-2">
+        Having the Freighter <strong className="text-accent">app installed</strong> does not connect it
+        to Chrome automatically. The list may show <strong className="text-accent">Install</strong>{' '}
+        next to Freighter — that is normal in mobile browsers.
       </p>
       {walletConnectEnabled ? (
-        <p className="mt-2">
-          Tap <strong className="text-accent">Choose wallet</strong> and pick{' '}
-          <strong className="text-accent">WalletConnect</strong> to pair Freighter, xBull, Lobstr, or
-          other Stellar wallets on your phone. You can also use a wallet&apos;s in-app browser if it
-          wraps this site.
-        </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5">
+          <li>
+            Tap <strong className="text-accent">Choose wallet</strong> below, then pick{' '}
+            <strong className="text-accent">WalletConnect</strong>.
+          </li>
+          <li>Select <strong className="text-accent">Freighter</strong> and approve the connection in the app.</li>
+          <li>Confirm the wallet is on <strong className="text-accent">Stellar Testnet</strong>.</li>
+          <li>
+            If connect fails, add{' '}
+            <code className="text-xs break-all">{window.location.origin}</code> under{' '}
+            <strong className="text-accent">Allowed origins</strong> at{' '}
+            <a
+              href="https://cloud.reown.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              cloud.reown.com
+            </a>
+            , then try again.
+          </li>
+        </ol>
       ) : (
-        <p className="mt-2">
-          WalletConnect is not configured for this deployment. Use a wallet&apos;s in-app browser, or
-          ask your operator to set <code className="text-xs">VITE_WALLET_CONNECT_PROJECT_ID</code>{' '}
-          (free at{' '}
-          <a
-            href="https://cloud.reown.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent underline-offset-4 hover:underline"
-          >
-            Reown Cloud
-          </a>
-          ).
-        </p>
+        <div className="mt-3 space-y-3">
+          <p className="font-medium theme-heading">Option A — Freighter in-app browser (no extra setup)</p>
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>Open the <strong className="text-accent">Freighter</strong> app (not Chrome).</li>
+            <li>
+              Use its browser / Discover tab and go to your dev URL, e.g.{' '}
+              <code className="text-xs break-all">{window.location.origin}</code>
+            </li>
+            <li>Connect again — Freighter should appear as available, not Install.</li>
+          </ol>
+          <p className="font-medium theme-heading">Option B — WalletConnect in Chrome</p>
+          <p>
+            Add a free project id from{' '}
+            <a
+              href="https://cloud.reown.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Reown Cloud
+            </a>{' '}
+            to <code className="text-xs">VITE_WALLET_CONNECT_PROJECT_ID</code> in{' '}
+            <code className="text-xs">frontend/.env</code>, restart{' '}
+            <code className="text-xs">npm run dev</code>, then use WalletConnect in the wallet list.
+          </p>
+          <p className="font-medium theme-heading">Option C — Albedo</p>
+          <p>Tap <strong className="text-accent">Albedo</strong> in the list (works in Chrome without the Freighter app).</p>
+        </div>
       )}
     </div>
   ) : (
@@ -91,21 +135,27 @@ export function ConnectWalletModal({
     </div>
   )
 
+  const handleConnect = () => {
+    document.body.style.overflow = ''
+    void connect()
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] overflow-y-auto overscroll-y-contain"
       role="dialog"
       aria-modal="true"
       aria-labelledby="connect-wallet-title"
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-[color-mix(in_srgb,var(--heading)_55%,transparent)] backdrop-blur-sm"
-        aria-label="Close dialog"
-        onClick={allowClose ? onClose : undefined}
-      />
+      <div className="flex min-h-full justify-center p-4 py-6 sm:items-center sm:py-8">
+        <button
+          type="button"
+          className="fixed inset-0 bg-[color-mix(in_srgb,var(--heading)_55%,transparent)] backdrop-blur-sm"
+          aria-label="Close dialog"
+          onClick={allowClose ? onClose : undefined}
+        />
 
-      <div className="relative z-10 w-full max-w-md border theme-border theme-card p-8 shadow-xl">
+        <div className="relative z-10 my-auto w-full max-w-md max-h-[min(90dvh,calc(100%-2rem))] overflow-y-auto border theme-border theme-card p-6 shadow-xl sm:max-h-[90vh] sm:p-8">
         {allowClose && onClose && (
           <button
             type="button"
@@ -148,7 +198,7 @@ export function ConnectWalletModal({
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
-            onClick={() => void connect()}
+            onClick={handleConnect}
             disabled={isLoading}
             className="btn-primary flex-1 justify-center gap-2"
           >
@@ -163,6 +213,7 @@ export function ConnectWalletModal({
             Back to home
           </Link>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -58,18 +58,33 @@ export async function connectViaWalletKit(): Promise<string> {
   initWalletKit()
   StellarWalletsKit.setNetwork(Networks.TESTNET)
 
-  const { address } = await StellarWalletsKit.authModal()
+  let lastError: unknown
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const { address } = await StellarWalletsKit.authModal()
 
-  const network = await StellarWalletsKit.getNetwork()
-  if (
-    normalizePassphrase(network.networkPassphrase) !==
-    normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
-  ) {
-    await StellarWalletsKit.disconnect()
-    throw new Error('Wrong network in wallet. Please switch to Stellar Testnet.')
+      const network = await StellarWalletsKit.getNetwork()
+      if (
+        normalizePassphrase(network.networkPassphrase) !==
+        normalizePassphrase(TESTNET_CONFIG.networkPassphrase)
+      ) {
+        await StellarWalletsKit.disconnect()
+        throw new Error('Wrong network in wallet. Please switch to Stellar Testnet.')
+      }
+
+      return address
+    } catch (err) {
+      lastError = err
+      if (isKitUserCancelError(err)) throw err
+      if (shouldRetryWalletConnect(err) && attempt < 3) {
+        await new Promise((r) => setTimeout(r, 700))
+        continue
+      }
+      throw err
+    }
   }
 
-  return address
+  throw lastError
 }
 
 export async function getKitAddress(): Promise<string | null> {
@@ -141,4 +156,47 @@ export function subscribeWalletKit(
 
 export function isKitUserCancelError(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code: number }).code === -1
+}
+
+/** User-facing message for wallet / WalletConnect failures */
+export function formatConnectError(err: unknown): string {
+  if (isKitUserCancelError(err)) return ''
+
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: string }).message)
+      : err instanceof Error
+        ? err.message
+        : 'Failed to connect wallet'
+
+  const ext =
+    err && typeof err === 'object' && 'ext' in err && (err as { ext?: string }).ext
+      ? String((err as { ext: string }).ext)
+      : ''
+
+  let text = ext && ext !== message ? `${message} — ${ext}` : message
+
+  if (/not been started/i.test(text)) {
+    return 'WalletConnect is still starting. Wait a few seconds and tap Choose wallet again.'
+  }
+  if (/wrong network/i.test(text)) {
+    return 'Your wallet must be on Stellar Testnet. Switch network in Freighter, then connect again.'
+  }
+  if (/rejected|denied|cancelled|canceled|expired/i.test(text)) {
+    return 'Connection was cancelled or rejected in your wallet app. Try again and approve the session.'
+  }
+
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    if (origin.startsWith('http://') && !origin.includes('localhost')) {
+      text += ` Add ${origin} under Allowed origins at cloud.reown.com (Reown), or open this site in the Freighter app browser.`
+    }
+  }
+
+  return text
+}
+
+function shouldRetryWalletConnect(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return /not been started/i.test(msg)
 }
