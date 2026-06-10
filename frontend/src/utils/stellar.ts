@@ -1,4 +1,4 @@
-import { Address, Contract, Horizon, SorobanRpc, TransactionBuilder, scValToNative } from 'stellar-sdk'
+import { Account, Address, Contract, Horizon, rpc as SorobanRpc, TransactionBuilder, scValToNative } from '@stellar/stellar-sdk'
 import { TESTNET_CONFIG, USDC_ADDRESS, STROOPS_PER_UNIT } from '../config'
 import { withRetry } from './retry'
 import { logger } from './logger'
@@ -37,7 +37,7 @@ export async function getSacUsdcBalanceStroops(publicKey: string): Promise<bigin
   const server = new SorobanRpc.Server(TESTNET_CONFIG.rpcUrl, { allowHttp: false })
   const c = new Contract(USDC_ADDRESS)
   const bootstrap = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
-  const account = await withRetry(() => server.getAccount(bootstrap))
+  const account = (await withRetry(() => server.getAccount(bootstrap))) as unknown as Account
   const tx = new TransactionBuilder(account, {
     fee: '100000',
     networkPassphrase: TESTNET_CONFIG.networkPassphrase,
@@ -46,10 +46,15 @@ export async function getSacUsdcBalanceStroops(publicKey: string): Promise<bigin
     .setTimeout(30)
     .build()
 
-  const sim = await withRetry(() => server.simulateTransaction(tx))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sim = (await withRetry(() => server.simulateTransaction(tx))) as any
   if (SorobanRpc.Api.isSimulationError(sim)) return 0n
   if (!sim.result?.retval) return 0n
-  return BigInt(String(scValToNative(sim.result.retval)))
+  try {
+    return BigInt(String(scValToNative(sim.result.retval)))
+  } catch {
+    return 0n
+  }
 }
 
 export async function getUSDCBalance(publicKey: string): Promise<string> {

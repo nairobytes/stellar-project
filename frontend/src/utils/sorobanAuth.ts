@@ -5,7 +5,7 @@ import {
   Transaction,
   TransactionBuilder,
   xdr,
-} from 'stellar-sdk'
+} from '@stellar/stellar-sdk'
 import { signAuthEntry as freighterSignAuthEntry, isConnected, isAllowed } from '@stellar/freighter-api'
 import { TESTNET_CONFIG } from '../config'
 

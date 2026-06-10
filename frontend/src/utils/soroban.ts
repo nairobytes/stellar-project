@@ -1,12 +1,12 @@
 import {
   Contract,
-  SorobanRpc,
+  rpc as SorobanRpc,
   TransactionBuilder,
   xdr,
   nativeToScVal,
   scValToNative,
   Address,
-} from 'stellar-sdk'
+} from '@stellar/stellar-sdk'
 import { signTransaction } from './stellar'
 import { signSorobanAuthorizationEntries } from './sorobanAuth'
 import { CONTRACT_ADDRESS, TESTNET_CONFIG, USDC_ADDRESS, BASIS_POINTS_DIVISOR, INVESTOR_YIELD_BPS } from '../config'
@@ -58,15 +58,48 @@ async function waitForTransactionSuccess(hash: string): Promise<void> {
   throw new Error('Transaction confirmation timed out')
 }
 
-function parseScValU64(val: xdr.ScVal): bigint {
+/**
+ * stellar-sdk v11 doesn't define SCV_VOID (discriminant 1) which was added in Protocol 22.
+ * `scValToNative` throws "Bad union switch: 1" on any Option<T> = None field.
+ * This wrapper catches that and returns null, matching the Soroban Option::None semantics.
+ */
+function safeScValToNative(val: xdr.ScVal): unknown {
   try {
-    return BigInt(String(scValToNative(val)))
-  } catch {
+    return scValToNative(val)
+  } catch (err) {
+    if (/bad union switch/i.test(String(err))) return null
+    throw err
+  }
+}
+
+/**
+ * Safe map decoder — iterates XDR map entries individually so a single void/null
+ * field (e.g. investor = None) doesn't abort parsing the entire struct.
+ */
+function scValMapToRecord(val: xdr.ScVal): Record<string, unknown> {
+  const entries = val.map() ?? []
+  const record: Record<string, unknown> = {}
+  for (const entry of entries) {
+    const key = String(safeScValToNative(entry.key()))
+    try {
+      record[key] = safeScValToNative(entry.val())
+    } catch {
+      record[key] = null
+    }
+  }
+  return record
+}
+
+function parseScValU64(val: xdr.ScVal): bigint {
+  // Try direct XDR access first — avoids stellar-sdk v11 scValToNative XDR-v4 bug
+  try {
     if (val.switch().name === 'scvU64') {
       return BigInt(val.u64().toString())
     }
-    throw new Error('Could not parse contract return value as u64')
+  } catch {
+    // fall through to safeScValToNative
   }
+  return BigInt(String(safeScValToNative(val)))
 }
 
 /** Normalize Stellar G/C addresses for reliable string comparison */
@@ -250,7 +283,7 @@ function parseScValAddress(val: unknown): string {
 }
 
 function scValToInvoice(val: xdr.ScVal): Invoice {
-  const native = scValToNative(val) as Record<string, unknown>
+  const native = scValMapToRecord(val)
   const investor = native.investor
   return {
     id: scValToBigInt(native.id),
@@ -290,10 +323,22 @@ export async function createInvoice(
   )
 
   const { simulatedReturnVal } = await simulateAndSend(supplier, operation)
-  if (!simulatedReturnVal) {
-    throw new Error('No return value from create_invoice simulation')
+
+  if (simulatedReturnVal) {
+    try {
+      return parseScValU64(simulatedReturnVal)
+    } catch (err) {
+      // stellar-sdk XDR-v4 parse failure — tx already confirmed, fall back to querying
+      logger.warn('parseScValU64 failed, querying for new invoice ID', { error: String(err) })
+    }
   }
-  return parseScValU64(simulatedReturnVal)
+
+  // Fallback: tx succeeded but retval is unreadable — find the new invoice ID by querying
+  const ids = await getSupplierInvoices(supplier)
+  if (ids.length > 0) {
+    return ids.reduce((max, id) => (id > max ? id : max), ids[0])
+  }
+  throw new Error('Invoice created on-chain but could not determine invoice ID')
 }
 
 export async function fundInvoice(
@@ -344,7 +389,7 @@ export async function establishSacUsdcTrust(account: string): Promise<void> {
 
 export async function getInvoiceCount(): Promise<bigint> {
   const retval = await readContract('get_invoice_count', [])
-  return scValToBigInt(scValToNative(retval))
+  return scValToBigInt(safeScValToNative(retval))
 }
 
 export async function getInvoice(invoice_id: bigint): Promise<Invoice> {
@@ -364,8 +409,8 @@ export async function getSupplierInvoices(supplier: string): Promise<bigint[]> {
     Address.fromString(supplier).toScVal(),
   ])
 
-  const native = scValToNative(retval) as unknown[]
-  return native.map((id) => BigInt(String(id)))
+  const native = safeScValToNative(retval) as unknown[]
+  return (native ?? []).map((id) => BigInt(String(id)))
 }
 
 export async function getCreditScore(supplier: string): Promise<number> {
@@ -375,7 +420,7 @@ export async function getCreditScore(supplier: string): Promise<number> {
     Address.fromString(supplier).toScVal(),
   ])
 
-  return Number(scValToNative(retval))
+  return Number(safeScValToNative(retval))
 }
 
 export async function markOverdue(invoice_id: bigint): Promise<boolean> {
@@ -406,7 +451,7 @@ export async function markOverdue(invoice_id: bigint): Promise<boolean> {
 
   const retval = simResult.result?.retval
   if (!retval) return false
-  return Boolean(scValToNative(retval))
+  return Boolean(safeScValToNative(retval))
 }
 
 export async function markDefaulted(invoice_id: bigint): Promise<boolean> {
@@ -416,7 +461,7 @@ export async function markDefaulted(invoice_id: bigint): Promise<boolean> {
     nativeToScVal(invoice_id, { type: 'u64' }),
   ])
 
-  return Boolean(scValToNative(retval))
+  return Boolean(safeScValToNative(retval))
 }
 
 export async function updateCreditScore(supplier: string, newScore: number): Promise<void> {
